@@ -1,3 +1,5 @@
+import { PasskeySection } from "~/components/sections/passkey-section";
+import { TwoFactorSection } from "~/components/sections/two-factor-section";
 import { WidgetRenderer } from "~/components/widgets/widget-renderer";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import type { PageDefinition } from "~/lib/types/manifest";
@@ -89,6 +91,10 @@ export function DynamicPage({
 									))}
 								</div>
 							);
+						case "two-factor":
+							return <TwoFactorSection key={key} serviceSlug={service.slug} />;
+						case "passkey-manager":
+							return <PasskeySection key={key} serviceSlug={service.slug} />;
 						default:
 							return (
 								<div

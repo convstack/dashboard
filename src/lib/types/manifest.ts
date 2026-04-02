@@ -85,6 +85,8 @@ export interface PageSection {
 		| "detail"
 		| "widget-grid"
 		| "action-bar"
+		| "two-factor"
+		| "passkey-manager"
 		| "custom";
 	endpoint: string;
 	config: Record<string, JsonValue>;

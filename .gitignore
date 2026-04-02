@@ -1,5 +1,12 @@
 node_modules/
+.output/
 dist/
+.vinxi/
+.claude/
+.tanstack/
 .env
 .env.local
-.claude
+*.log
+drizzle/meta/
+.DS_Store
+coverage/
