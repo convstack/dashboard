@@ -11,8 +11,31 @@ export interface AuthenticatedContext {
 	services: ServiceCatalogEntry[];
 }
 
-// Client-side cache — survives across route navigations
-let cachedServices: ServiceCatalogEntry[] | null = null;
+// Module-level cache that survives across all router operations
+let serviceCache: ServiceCatalogEntry[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 60_000; // 1 minute
+
+async function getServices(
+	accessToken: string,
+): Promise<ServiceCatalogEntry[]> {
+	// Return cache if fresh
+	if (serviceCache.length > 0 && Date.now() - lastFetchTime < CACHE_DURATION) {
+		return serviceCache;
+	}
+
+	try {
+		const fresh = await getServiceCatalogFn({ data: { accessToken } });
+		if (fresh.length > 0) {
+			serviceCache = fresh;
+			lastFetchTime = Date.now();
+		}
+	} catch {
+		// Keep stale cache
+	}
+
+	return serviceCache;
+}
 
 export const Route = createFileRoute("/_authenticated")({
 	beforeLoad: async () => {
@@ -21,26 +44,10 @@ export const Route = createFileRoute("/_authenticated")({
 			throw redirect({ to: "/login" });
 		}
 
-		let services: ServiceCatalogEntry[] = [];
-		try {
-			services = await getServiceCatalogFn({
-				data: { accessToken: session.accessToken },
-			});
-			if (services.length > 0) {
-				cachedServices = services;
-			}
-		} catch {
-			// Catalog unavailable
-		}
-
-		// Use cached services if the fresh fetch returned empty
-		if (services.length === 0 && cachedServices) {
-			services = cachedServices;
-		}
-
+		const services = await getServices(session.accessToken);
 		return { session, services } as AuthenticatedContext;
 	},
-	shouldReload: ({ cause }) => cause === "enter",
+	shouldReload: false,
 	component: AuthenticatedLayout,
 	errorComponent: ({ error }) => (
 		<div className="flex min-h-screen items-center justify-center">
@@ -66,7 +73,6 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
 	const { session, services } = Route.useRouteContext();
 
-	// Proactively refresh the session cookie before the token expires
 	useEffect(() => {
 		const timeUntilExpiry = session.expiresAt - Date.now() / 1000;
 		const refreshIn = Math.max((timeUntilExpiry - 300) * 1000, 0);
