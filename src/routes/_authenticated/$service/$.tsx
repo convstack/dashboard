@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { DynamicPage } from "~/components/pages/dynamic-page";
 import { findPage, interpolateEndpoint } from "~/lib/manifest-routing";
 import type { AuthenticatedContext } from "~/routes/_authenticated";
@@ -7,11 +7,11 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 	loader: async ({ params, context }) => {
 		const ctx = context as unknown as AuthenticatedContext;
 		const service = ctx.services.find((s) => s.slug === params.service);
-		if (!service || !service.uiManifest) throw notFound();
+		if (!service || !service.uiManifest) return null;
 
 		const path = `/${params._splat || ""}`;
 		const match = findPage(service.uiManifest.pages, path);
-		if (!match) throw notFound();
+		if (!match) return null;
 
 		const { page, pathParams } = match;
 
