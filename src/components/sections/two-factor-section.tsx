@@ -27,14 +27,11 @@ export function TwoFactorSection({ serviceSlug }: Props) {
 			setLoading(true);
 			try {
 				const res = await fetch(
-					`/api/proxy/${serviceSlug}/api/user/security-status`,
+					`/api/proxy/${serviceSlug}/api/user/2fa/status`,
 				);
 				if (res.ok) {
 					const data = await res.json();
-					const fields: { key: string; label: string; value: string }[] =
-						data?.fields ?? [];
-					const twoFactorField = fields.find((f) => f.key === "twoFactor");
-					setEnabled(twoFactorField?.value === "Enabled");
+					setEnabled(data?.enabled ?? false);
 				}
 			} catch {
 				// leave enabled as null

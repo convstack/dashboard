@@ -22,9 +22,7 @@ export function PasskeySection({ serviceSlug }: Props) {
 	const fetchPasskeys = useCallback(async () => {
 		setLoading(true);
 		try {
-			const res = await fetch(
-				`/api/proxy/${serviceSlug}/api/auth/passkey/list-user-passkeys`,
-			);
+			const res = await fetch(`/api/proxy/${serviceSlug}/api/user/passkeys`);
 			if (res.ok) {
 				const data = await res.json();
 				setPasskeys(data?.data ?? []);
@@ -102,11 +100,10 @@ export function PasskeySection({ serviceSlug }: Props) {
 		setSuccess("");
 		try {
 			const res = await fetch(
-				`/api/proxy/${serviceSlug}/api/auth/passkey/delete-passkey`,
+				`/api/proxy/${serviceSlug}/api/user/passkeys/${id}/delete`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ id, password }),
 				},
 			);
 			const data = await res.json().catch(() => null);
