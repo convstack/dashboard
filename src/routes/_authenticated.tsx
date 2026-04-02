@@ -16,10 +16,34 @@ export const Route = createFileRoute("/_authenticated")({
 		if (!session) {
 			throw redirect({ to: "/login" });
 		}
-		const services = await getServiceCatalogFn();
+		let services: ServiceCatalogEntry[] = [];
+		try {
+			services = await getServiceCatalogFn();
+		} catch {
+			// Catalog unavailable — show empty sidebar rather than breaking
+		}
 		return { session, services } as AuthenticatedContext;
 	},
 	component: AuthenticatedLayout,
+	errorComponent: ({ error }) => (
+		<div className="flex min-h-screen items-center justify-center">
+			<div className="max-w-md text-center space-y-4">
+				<h1 className="text-xl font-bold">Something went wrong</h1>
+				<p className="text-sm text-(--muted-foreground)">
+					{error instanceof Error
+						? error.message
+						: "An unexpected error occurred."}
+				</p>
+				<button
+					type="button"
+					onClick={() => (window.location.href = "/home")}
+					className="rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
+				>
+					Go to Dashboard
+				</button>
+			</div>
+		</div>
+	),
 });
 
 function AuthenticatedLayout() {
