@@ -171,20 +171,22 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
 export async function fetchUserInfo(
 	accessToken: string,
 ): Promise<SessionData["user"] | null> {
-	const response = await fetch(`${LANYARD_URL}/api/auth/get-session`, {
+	// Use the OIDC userinfo endpoint — the access token is an OAuth2 token,
+	// not a Better Auth session token, so /api/auth/get-session won't work.
+	const response = await fetch(`${LANYARD_URL}/api/auth/oauth2/userinfo`, {
 		headers: { Authorization: `Bearer ${accessToken}` },
 	});
 
 	if (!response.ok) return null;
 	const data = await response.json();
-	if (!data?.user) return null;
+	if (!data?.sub) return null;
 
 	return {
-		id: data.user.id,
-		name: data.user.name,
-		email: data.user.email,
-		image: data.user.image ?? undefined,
-		role: data.user.role ?? "user",
+		id: data.sub,
+		name: data.name ?? "",
+		email: data.email ?? "",
+		image: data.picture ?? undefined,
+		role: data.role ?? "user",
 	};
 }
 

@@ -16,6 +16,7 @@ import { Route as AuthLogoutRouteImport } from './routes/_auth/logout'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthCallbackRouteImport } from './routes/_auth/callback'
 import { Route as AuthenticatedServiceIndexRouteImport } from './routes/_authenticated/$service/index'
+import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 import { Route as AuthenticatedServiceSplatRouteImport } from './routes/_authenticated/$service/$'
 import { Route as ApiProxyServiceSplatRouteImport } from './routes/api/proxy/$service/$'
 
@@ -54,6 +55,11 @@ const AuthenticatedServiceIndexRoute =
     path: '/$service/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
+  id: '/api/auth/callback',
+  path: '/api/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedServiceSplatRoute =
   AuthenticatedServiceSplatRouteImport.update({
     id: '/$service/$',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/logout': typeof AuthLogoutRoute
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$service/': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
 }
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/logout': typeof AuthLogoutRoute
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$service': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
 }
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_auth/logout': typeof AuthLogoutRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/$service/$': typeof AuthenticatedServiceSplatRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/_authenticated/$service/': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
 }
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/home'
     | '/$service/$'
+    | '/api/auth/callback'
     | '/$service/'
     | '/api/proxy/$service/$'
   fileRoutesByTo: FileRoutesByTo
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/home'
     | '/$service/$'
+    | '/api/auth/callback'
     | '/$service'
     | '/api/proxy/$service/$'
   id:
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_auth/logout'
     | '/_authenticated/home'
     | '/_authenticated/$service/$'
+    | '/api/auth/callback'
     | '/_authenticated/$service/'
     | '/api/proxy/$service/$'
   fileRoutesById: FileRoutesById
@@ -138,6 +150,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiProxyServiceSplatRoute: typeof ApiProxyServiceSplatRoute
 }
 
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServiceIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/auth/callback': {
+      id: '/api/auth/callback'
+      path: '/api/auth/callback'
+      fullPath: '/api/auth/callback'
+      preLoaderRoute: typeof ApiAuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/$service/$': {
       id: '/_authenticated/$service/$'
       path: '/$service/$'
@@ -231,6 +251,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiProxyServiceSplatRoute: ApiProxyServiceSplatRoute,
 }
 export const routeTree = rootRouteImport
