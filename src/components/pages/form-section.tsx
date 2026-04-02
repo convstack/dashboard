@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
 import type { FormConfig, PageSection } from "~/lib/types/manifest";
 
@@ -12,8 +12,43 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState("");
+	const [values, setValues] = useState<Record<string, string>>({});
+	const [prefilled, setPrefilled] = useState(false);
 
 	const config = section.config as unknown as FormConfig;
+
+	const endpoint = interpolateEndpoint(
+		config.submitEndpoint || section.endpoint,
+		pathParams,
+	);
+
+	// Pre-fill form values from a GET request to the same endpoint
+	// The detail format { fields: [{ key, value }] } is parsed into key-value pairs
+	const prefill = useCallback(async () => {
+		if (!config?.fields || !endpoint) return;
+		try {
+			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`);
+			if (!response.ok) return;
+			const data = await response.json();
+			if (data?.fields && Array.isArray(data.fields)) {
+				const initial: Record<string, string> = {};
+				for (const field of data.fields) {
+					if (field.key && field.value != null) {
+						initial[field.key] = String(field.value);
+					}
+				}
+				setValues(initial);
+			}
+		} catch {
+			// Pre-fill is best-effort
+		}
+		setPrefilled(true);
+	}, [serviceSlug, endpoint, config?.fields]);
+
+	useEffect(() => {
+		prefill();
+	}, [prefill]);
+
 	if (!config?.fields) {
 		return (
 			<div className="rounded-lg border border-(--border) p-6">
@@ -24,20 +59,24 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		);
 	}
 
+	const handleChange = (key: string, value: string) => {
+		setValues((prev) => ({ ...prev, [key]: value }));
+	};
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setLoading(true);
 		setError("");
 		setSuccess(false);
 
-		const formData = new FormData(e.currentTarget);
+		// Build body from current values (pre-filled + user changes)
 		const body: Record<string, string> = {};
-		for (const [key, value] of formData.entries()) {
-			body[key] = value as string;
+		for (const field of config.fields) {
+			const val = values[field.key];
+			if (val !== undefined) {
+				body[field.key] = val;
+			}
 		}
-
-		const rawEndpoint = config.submitEndpoint || section.endpoint;
-		const endpoint = interpolateEndpoint(rawEndpoint, pathParams);
 
 		try {
 			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`, {
@@ -51,12 +90,25 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 				setError(data?.error || `Error: ${response.status}`);
 			} else {
 				setSuccess(true);
+				// Reload to reflect changes in sidebar/header
+				setTimeout(() => window.location.reload(), 500);
 			}
 		} catch {
 			setError("Network error");
 		}
 		setLoading(false);
 	};
+
+	if (!prefilled) {
+		return (
+			<div className="rounded-lg border border-(--border) p-6">
+				{config.title && (
+					<h3 className="text-sm font-semibold mb-4">{config.title}</h3>
+				)}
+				<p className="text-sm text-(--muted-foreground)">Loading...</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="rounded-lg border border-(--border) p-6">
@@ -85,6 +137,8 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 								name={field.key}
 								required={field.required}
 								placeholder={field.placeholder}
+								value={values[field.key] ?? ""}
+								onChange={(e) => handleChange(field.key, e.target.value)}
 								rows={3}
 								className="mt-1 block w-full rounded-md border border-(--input) bg-(--background) px-3 py-2 text-sm"
 							/>
@@ -93,6 +147,8 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 								id={field.key}
 								name={field.key}
 								required={field.required}
+								value={values[field.key] ?? ""}
+								onChange={(e) => handleChange(field.key, e.target.value)}
 								className="mt-1 block w-full rounded-md border border-(--input) bg-(--background) px-3 py-2 text-sm"
 							>
 								{field.options?.map((opt) => (
@@ -108,6 +164,8 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 								type={field.type}
 								required={field.required}
 								placeholder={field.placeholder}
+								value={values[field.key] ?? ""}
+								onChange={(e) => handleChange(field.key, e.target.value)}
 								className="mt-1 block w-full rounded-md border border-(--input) bg-(--background) px-3 py-2 text-sm"
 							/>
 						)}
