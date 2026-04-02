@@ -11,6 +11,9 @@ export interface AuthenticatedContext {
 	services: ServiceCatalogEntry[];
 }
 
+// Client-side cache — survives across route navigations
+let cachedServices: ServiceCatalogEntry[] | null = null;
+
 export const Route = createFileRoute("/_authenticated")({
 	beforeLoad: async () => {
 		const session = await getSessionFn();
@@ -23,14 +26,20 @@ export const Route = createFileRoute("/_authenticated")({
 			services = await getServiceCatalogFn({
 				data: { accessToken: session.accessToken },
 			});
+			if (services.length > 0) {
+				cachedServices = services;
+			}
 		} catch {
 			// Catalog unavailable
 		}
 
+		// Use cached services if the fresh fetch returned empty
+		if (services.length === 0 && cachedServices) {
+			services = cachedServices;
+		}
+
 		return { session, services } as AuthenticatedContext;
 	},
-	// Only reload when navigating from outside the authenticated area
-	// This prevents re-fetching the catalog on every click
 	shouldReload: ({ cause }) => cause === "enter",
 	component: AuthenticatedLayout,
 	errorComponent: ({ error }) => (
@@ -60,13 +69,11 @@ function AuthenticatedLayout() {
 	// Proactively refresh the session cookie before the token expires
 	useEffect(() => {
 		const timeUntilExpiry = session.expiresAt - Date.now() / 1000;
-		// Refresh 5 minutes before expiry
 		const refreshIn = Math.max((timeUntilExpiry - 300) * 1000, 0);
 
 		const timer = setTimeout(async () => {
 			const res = await fetch("/api/auth/refresh", { method: "POST" });
 			if (res.ok) {
-				// Reload to pick up new token + fresh catalog
 				window.location.reload();
 			} else {
 				window.location.href = "/login";
