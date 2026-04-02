@@ -16,8 +16,18 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 		const { page, pathParams } = match;
 
 		// Fetch section data server-side with interpolated endpoints
+		// Skip sections that don't need server-side data (forms, two-factor, passkey-manager)
 		const sectionData = await Promise.all(
 			page.sections.map(async (section) => {
+				if (
+					!section.endpoint ||
+					section.type === "form" ||
+					section.type === "two-factor" ||
+					section.type === "passkey-manager" ||
+					section.type === "widget-grid"
+				) {
+					return null;
+				}
 				const endpoint = interpolateEndpoint(section.endpoint, pathParams);
 				try {
 					const response = await fetch(`${service.baseUrl}${endpoint}`, {

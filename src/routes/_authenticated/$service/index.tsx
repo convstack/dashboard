@@ -19,6 +19,15 @@ export const Route = createFileRoute("/_authenticated/$service/")({
 
 		const sectionData = await Promise.all(
 			page.sections.map(async (section) => {
+				if (
+					!section.endpoint ||
+					section.type === "form" ||
+					section.type === "two-factor" ||
+					section.type === "passkey-manager" ||
+					section.type === "widget-grid"
+				) {
+					return null;
+				}
 				const endpoint = interpolateEndpoint(section.endpoint, {});
 				try {
 					const response = await fetch(`${service.baseUrl}${endpoint}`, {
