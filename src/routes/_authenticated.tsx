@@ -18,7 +18,9 @@ export const Route = createFileRoute("/_authenticated")({
 		}
 		let services: ServiceCatalogEntry[] = [];
 		try {
-			services = await getServiceCatalogFn();
+			services = await getServiceCatalogFn({
+				data: { accessToken: session.accessToken },
+			});
 		} catch {
 			// Catalog unavailable — show empty sidebar rather than breaking
 		}

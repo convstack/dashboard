@@ -31,6 +31,7 @@ function NavLink({
 	return (
 		<Link
 			to={to}
+			activeOptions={{ exact: true }}
 			className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-(--sidebar-foreground) hover:bg-(--sidebar-accent) hover:text-(--sidebar-accent-foreground) [&.active]:bg-(--sidebar-accent) [&.active]:font-medium [&.active]:text-(--sidebar-accent-foreground)"
 		>
 			{icon && <DynamicIcon name={icon} className="h-4 w-4" />}
