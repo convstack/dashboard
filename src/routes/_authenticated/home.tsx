@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { WidgetRenderer } from "~/components/widgets/widget-renderer";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { DynamicIcon } from "~/components/layout/dynamic-icon";
 
 export const Route = createFileRoute("/_authenticated/home")({
 	component: HomePage,
@@ -8,85 +8,79 @@ export const Route = createFileRoute("/_authenticated/home")({
 function HomePage() {
 	const { session, services } = Route.useRouteContext();
 
-	const activeServices = services.filter(
-		(s) => s.uiManifest && s.status !== "inactive",
-	);
-
-	const allWidgets = activeServices.flatMap((service) =>
-		(service.uiManifest?.widgets ?? []).map((widget) => ({
-			widget,
-			service,
-		})),
+	// Filter out Lanyard's own services — they're admin/account tools, not "apps"
+	const appServices = services.filter(
+		(s) =>
+			s.uiManifest &&
+			s.status !== "inactive" &&
+			s.slug !== "lanyard-admin" &&
+			s.slug !== "my-account",
 	);
 
 	return (
 		<div>
 			<h1 className="text-2xl font-bold">Dashboard</h1>
 			<p className="mt-1 text-sm text-(--muted-foreground)">
-				Welcome back, {session.user.name}.
+				Welcome back, {session.user.name || session.user.email}.
 			</p>
 
-			{activeServices.length === 0 ? (
+			{appServices.length === 0 ? (
 				<div className="mt-8 rounded-lg border border-dashed border-(--border) p-12 text-center">
-					<p className="text-sm text-(--muted-foreground)">
-						No services connected yet. Register a service in Lanyard to see it
-						here.
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-(--muted)">
+						<DynamicIcon
+							name="box"
+							className="h-6 w-6 text-(--muted-foreground)"
+						/>
+					</div>
+					<p className="text-sm font-medium">No apps connected yet</p>
+					<p className="mt-1 text-xs text-(--muted-foreground)">
+						When services register with Lanyard, they'll appear here as apps you
+						can access.
 					</p>
 				</div>
 			) : (
-				<>
-					{/* Service status overview */}
-					<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-						{activeServices.map((service) => (
-							<div
-								key={service.id}
-								className="rounded-lg border border-(--border) bg-(--card) p-4"
-							>
-								<div className="flex items-center justify-between">
-									<p className="text-sm font-medium">
-										{service.uiManifest?.name || service.name}
-									</p>
-									<span
-										className={`inline-flex h-2 w-2 rounded-full ${
-											service.status === "active"
-												? "bg-green-500"
-												: service.status === "degraded"
-													? "bg-yellow-500"
-													: "bg-gray-400"
-										}`}
+				<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{appServices.map((service) => (
+						<Link
+							key={service.id}
+							to="/$service"
+							params={{ service: service.slug }}
+							className="group rounded-lg border border-(--border) bg-(--card) p-6 hover:border-(--primary) hover:shadow-sm transition-all"
+						>
+							<div className="flex items-center gap-3">
+								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-(--primary) text-(--primary-foreground)">
+									<DynamicIcon
+										name={service.uiManifest?.icon ?? "box"}
+										className="h-5 w-5"
 									/>
 								</div>
-								<p className="mt-1 text-xs text-(--muted-foreground)">
-									{service.status}
-									{service.version && ` · v${service.version}`}
-								</p>
+								<div>
+									<p className="font-medium group-hover:text-(--primary) transition-colors">
+										{service.uiManifest?.name || service.name}
+									</p>
+									{service.description && (
+										<p className="text-xs text-(--muted-foreground)">
+											{service.description}
+										</p>
+									)}
+								</div>
 							</div>
-						))}
-					</div>
-
-					{/* Widget grid */}
-					{allWidgets.length > 0 && (
-						<div className="mt-8">
-							<h2 className="text-lg font-semibold mb-4">Overview</h2>
-							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-								{allWidgets.map(({ widget, service }) => (
-									<div
-										key={`${service.id}-${widget.id}`}
-										className={
-											widget.size === "full"
-												? "col-span-full"
-												: widget.size === "lg"
-													? "sm:col-span-2"
-													: ""
-										}
-									>
-										<WidgetRenderer widget={widget} service={service} />
-									</div>
-								))}
+							<div className="mt-3 flex items-center gap-2 text-xs text-(--muted-foreground)">
+								<span
+									className={`inline-flex h-1.5 w-1.5 rounded-full ${
+										service.status === "active"
+											? "bg-green-500"
+											: service.status === "degraded"
+												? "bg-yellow-500"
+												: "bg-gray-400"
+									}`}
+								/>
+								{service.status}
+								{service.version && ` · v${service.version}`}
 							</div>
-						</div>
-					)}
-				</>
+						</Link>
+					))}
+				</div>
 			)}
 		</div>
 	);
