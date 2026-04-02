@@ -65,9 +65,14 @@ export function DynamicSidebar({ session, services }: Props) {
 					Home
 				</Link>
 
-				{/* Dynamic service sections */}
+				{/* Dynamic service sections — user services first, then admin */}
 				{services
 					.filter((s) => s.uiManifest && s.status !== "inactive")
+					.sort((a, b) => {
+						if (a.type === "user" && b.type !== "user") return -1;
+						if (a.type !== "user" && b.type === "user") return 1;
+						return 0;
+					})
 					.map((service) => (
 						<div key={service.id}>
 							<div className="flex items-center gap-1.5 px-2 pt-4 pb-1.5 text-xs font-semibold uppercase tracking-wider text-(--muted-foreground)">

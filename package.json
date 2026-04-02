@@ -19,7 +19,7 @@
 		"@tanstack/react-router": "^1.168.2",
 		"@tanstack/react-start": "^1.167.3",
 		"clsx": "^2.1.1",
-		"lucide-react": "^0.500.0",
+		"lucide-react": "^1.7.0",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
 		"tailwind-merge": "^3.5.0",
@@ -34,7 +34,7 @@
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^6.0.1",
 		"tailwindcss": "^4.2.2",
-		"typescript": "^5.9.3",
+		"typescript": "^6.0.2",
 		"vite": "^8.0.1",
 		"vitest": "^4.1.0"
 	}
