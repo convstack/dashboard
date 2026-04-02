@@ -57,6 +57,8 @@ export interface DataTableConfig {
 	title?: string;
 	rowLink?: string;
 	rowActions?: RowAction[];
+	createLink?: string;
+	createLabel?: string;
 }
 
 export interface DetailConfig {

@@ -87,9 +87,30 @@ export function DataTableSection({
 
 	return (
 		<div className="rounded-lg border border-(--border) overflow-hidden">
-			{config.title && (
-				<div className="border-b border-(--border) px-4 py-3">
-					<h3 className="text-sm font-semibold">{config.title}</h3>
+			{(config.title || config.createLink) && (
+				<div className="border-b border-(--border) px-4 py-3 flex items-center justify-between">
+					{config.title ? (
+						<h3 className="text-sm font-semibold">{config.title}</h3>
+					) : (
+						<div />
+					)}
+					{config.createLink && (
+						<button
+							type="button"
+							onClick={() =>
+								router.navigate({
+									to: "/$service/$",
+									params: {
+										service: serviceSlug,
+										_splat: (config.createLink ?? "").replace(/^\//, ""),
+									},
+								})
+							}
+							className="rounded-md bg-(--primary) px-3 py-1.5 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
+						>
+							{config.createLabel || "Create"}
+						</button>
+					)}
 				</div>
 			)}
 			<div className="overflow-x-auto">
