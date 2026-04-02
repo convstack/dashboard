@@ -17,6 +17,7 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthCallbackRouteImport } from './routes/_auth/callback'
 import { Route as AuthenticatedServiceIndexRouteImport } from './routes/_authenticated/$service/index'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 import { Route as AuthenticatedServiceSplatRouteImport } from './routes/_authenticated/$service/$'
 import { Route as ApiProxyServiceSplatRouteImport } from './routes/api/proxy/$service/$'
@@ -61,6 +62,11 @@ const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
   path: '/api/auth/refresh',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
   id: '/api/auth/callback',
   path: '/api/auth/callback',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/$service/': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/$service': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/$service/$': typeof AuthenticatedServiceSplatRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/_authenticated/$service/': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/$service/$'
     | '/api/auth/callback'
+    | '/api/auth/logout'
     | '/api/auth/refresh'
     | '/$service/'
     | '/api/proxy/$service/$'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/$service/$'
     | '/api/auth/callback'
+    | '/api/auth/logout'
     | '/api/auth/refresh'
     | '/$service'
     | '/api/proxy/$service/$'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_authenticated/home'
     | '/_authenticated/$service/$'
     | '/api/auth/callback'
+    | '/api/auth/logout'
     | '/api/auth/refresh'
     | '/_authenticated/$service/'
     | '/api/proxy/$service/$'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
   ApiProxyServiceSplatRoute: typeof ApiProxyServiceSplatRoute
 }
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/callback': {
       id: '/api/auth/callback'
       path: '/api/auth/callback'
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
   ApiProxyServiceSplatRoute: ApiProxyServiceSplatRoute,
 }
