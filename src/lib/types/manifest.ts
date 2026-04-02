@@ -35,6 +35,7 @@ export interface PageDefinition {
 	layout: "default" | "full-width" | "split";
 	sections: PageSection[];
 	requiredPermission?: string;
+	showBack?: boolean;
 }
 
 export type JsonValue =
