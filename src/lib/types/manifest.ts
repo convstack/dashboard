@@ -68,10 +68,19 @@ export interface FormConfig {
 	fields: Array<{
 		key: string;
 		label: string;
-		type: "text" | "number" | "email" | "select" | "textarea" | "password";
+		type:
+			| "text"
+			| "number"
+			| "email"
+			| "select"
+			| "textarea"
+			| "password"
+			| "file";
 		required?: boolean;
 		placeholder?: string;
 		options?: Array<{ label: string; value: string }>;
+		uploadEndpoint?: string;
+		accept?: string;
 	}>;
 	submitLabel?: string;
 	submitEndpoint?: string;

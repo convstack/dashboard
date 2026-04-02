@@ -157,6 +157,49 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 									</option>
 								))}
 							</select>
+						) : field.type === "file" ? (
+							<div className="mt-1">
+								{values[field.key] && (
+									<img
+										src={values[field.key]}
+										alt="Preview"
+										className="mb-2 h-16 w-16 rounded-full object-cover"
+									/>
+								)}
+								<input
+									id={field.key}
+									type="file"
+									accept={field.accept || "image/*"}
+									onChange={async (e) => {
+										const selectedFile = e.target.files?.[0];
+										if (!selectedFile) return;
+										if (!field.uploadEndpoint) {
+											setError("No upload endpoint configured");
+											return;
+										}
+										setLoading(true);
+										setError("");
+										const form = new FormData();
+										form.append("file", selectedFile);
+										try {
+											const res = await fetch(
+												`/api/proxy/${serviceSlug}${field.uploadEndpoint}`,
+												{ method: "POST", body: form },
+											);
+											const data = await res.json();
+											if (data.url) {
+												handleChange(field.key, data.url);
+											} else {
+												setError(data.error || "Upload failed");
+											}
+										} catch {
+											setError("Upload failed");
+										}
+										setLoading(false);
+									}}
+									className="block w-full text-sm text-(--muted-foreground) file:mr-4 file:rounded-md file:border-0 file:bg-(--primary) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--primary-foreground) hover:file:opacity-90"
+								/>
+							</div>
 						) : (
 							<input
 								id={field.key}
