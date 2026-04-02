@@ -39,7 +39,7 @@ export function ConfirmDialog({
 		<dialog
 			ref={dialogRef}
 			onClose={onCancel}
-			className="backdrop:bg-black/50 rounded-lg border border-(--border) bg-(--background) p-6 space-y-4 min-w-[320px] shadow-lg"
+			className="fixed inset-0 m-auto backdrop:bg-black/50 rounded-lg border border-(--border) bg-(--background) p-6 space-y-4 min-w-[320px] max-w-md shadow-lg"
 		>
 			<h2 className="text-lg font-semibold text-(--foreground)">{title}</h2>
 			<p className="text-sm text-(--muted-foreground)">{message}</p>
