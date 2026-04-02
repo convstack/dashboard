@@ -1,12 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import {
-	decryptSession,
-	fetchUserInfo,
-	getSessionCookie,
-	refreshAccessToken,
-	type SessionData,
-} from "~/lib/auth";
+import { decryptSession, getSessionCookie, type SessionData } from "~/lib/auth";
 
 export const getSessionFn = createServerFn({ method: "GET" }).handler(
 	async (): Promise<SessionData | null> => {
@@ -17,22 +11,10 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
 		const session = await decryptSession(cookie);
 		if (!session) return null;
 
-		// Check if token is expired (with 60s buffer)
-		if (session.expiresAt < Date.now() / 1000 + 60) {
-			// Try to refresh
-			const tokens = await refreshAccessToken(session.refreshToken);
-			if (!tokens) return null;
-
-			const user = await fetchUserInfo(tokens.access_token);
-			if (!user) return null;
-
-			// Return refreshed session (cookie will be updated on next navigation)
-			return {
-				accessToken: tokens.access_token,
-				refreshToken: tokens.refresh_token,
-				expiresAt: Math.floor(Date.now() / 1000) + tokens.expires_in,
-				user,
-			};
+		// If token expired and no way to refresh server-side, return null
+		// The client-side refresh mechanism (via /api/auth/refresh) handles cookie updates
+		if (session.expiresAt < Date.now() / 1000) {
+			return null;
 		}
 
 		return session;

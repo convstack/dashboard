@@ -114,7 +114,7 @@ export function buildAuthorizationUrl(
 		client_id: CLIENT_ID,
 		redirect_uri: `${DASHBOARD_URL}/callback`,
 		response_type: "code",
-		scope: "openid profile email",
+		scope: "openid profile email offline_access",
 		state,
 		code_challenge: codeChallenge,
 		code_challenge_method: "S256",

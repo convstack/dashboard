@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { DashboardShell } from "~/components/layout/dashboard-shell";
 import type { SessionData } from "~/lib/auth";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
@@ -50,6 +51,22 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
 	const { session, services } = Route.useRouteContext();
+
+	// Proactively refresh the session cookie before the token expires
+	useEffect(() => {
+		const timeUntilExpiry = session.expiresAt - Date.now() / 1000;
+		// Refresh 5 minutes before expiry
+		const refreshIn = Math.max((timeUntilExpiry - 300) * 1000, 0);
+
+		const timer = setTimeout(async () => {
+			const res = await fetch("/api/auth/refresh", { method: "POST" });
+			if (!res.ok) {
+				window.location.href = "/login";
+			}
+		}, refreshIn);
+
+		return () => clearTimeout(timer);
+	}, [session.expiresAt]);
 
 	return (
 		<DashboardShell session={session} services={services}>
