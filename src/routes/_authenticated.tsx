@@ -17,16 +17,19 @@ export const Route = createFileRoute("/_authenticated")({
 		if (!session) {
 			throw redirect({ to: "/login" });
 		}
+
 		let services: ServiceCatalogEntry[] = [];
 		try {
 			services = await getServiceCatalogFn({
 				data: { accessToken: session.accessToken },
 			});
 		} catch {
-			// Catalog unavailable — show empty sidebar rather than breaking
+			// Catalog unavailable
 		}
+
 		return { session, services } as AuthenticatedContext;
 	},
+	shouldReload: false,
 	component: AuthenticatedLayout,
 	errorComponent: ({ error }) => (
 		<div className="flex min-h-screen items-center justify-center">
@@ -60,13 +63,34 @@ function AuthenticatedLayout() {
 
 		const timer = setTimeout(async () => {
 			const res = await fetch("/api/auth/refresh", { method: "POST" });
-			if (!res.ok) {
+			if (res.ok) {
+				// Reload to pick up new token + fresh catalog
+				window.location.reload();
+			} else {
 				window.location.href = "/login";
 			}
 		}, refreshIn);
 
 		return () => clearTimeout(timer);
 	}, [session.expiresAt]);
+
+	// If services went empty (token issue), try a refresh
+	useEffect(() => {
+		if (services.length > 0) return;
+		let cancelled = false;
+
+		async function tryRefresh() {
+			const res = await fetch("/api/auth/refresh", { method: "POST" });
+			if (!cancelled && res.ok) {
+				window.location.reload();
+			}
+		}
+
+		tryRefresh();
+		return () => {
+			cancelled = true;
+		};
+	}, [services.length]);
 
 	return (
 		<DashboardShell session={session} services={services}>
