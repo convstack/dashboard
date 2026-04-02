@@ -87,6 +87,7 @@ export interface FormConfig {
 	submitLabel?: string;
 	submitEndpoint?: string;
 	method?: string;
+	collapsed?: boolean;
 }
 
 export interface PageSection {
