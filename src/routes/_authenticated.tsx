@@ -29,7 +29,9 @@ export const Route = createFileRoute("/_authenticated")({
 
 		return { session, services } as AuthenticatedContext;
 	},
-	shouldReload: false,
+	// Only reload when navigating from outside the authenticated area
+	// This prevents re-fetching the catalog on every click
+	shouldReload: ({ cause }) => cause === "enter",
 	component: AuthenticatedLayout,
 	errorComponent: ({ error }) => (
 		<div className="flex min-h-screen items-center justify-center">
