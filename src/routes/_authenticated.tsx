@@ -74,24 +74,6 @@ function AuthenticatedLayout() {
 		return () => clearTimeout(timer);
 	}, [session.expiresAt]);
 
-	// If services went empty (token issue), try a refresh
-	useEffect(() => {
-		if (services.length > 0) return;
-		let cancelled = false;
-
-		async function tryRefresh() {
-			const res = await fetch("/api/auth/refresh", { method: "POST" });
-			if (!cancelled && res.ok) {
-				window.location.reload();
-			}
-		}
-
-		tryRefresh();
-		return () => {
-			cancelled = true;
-		};
-	}, [services.length]);
-
 	return (
 		<DashboardShell session={session} services={services}>
 			<Outlet />
