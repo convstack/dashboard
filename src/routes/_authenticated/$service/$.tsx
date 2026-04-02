@@ -49,7 +49,9 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 });
 
 function ServiceSubPage() {
-	const { service, page, sectionData, pathParams } = Route.useLoaderData();
+	const data = Route.useLoaderData();
+	if (!data?.service) return null;
+	const { service, page, sectionData, pathParams } = data;
 
 	return (
 		<DynamicPage
