@@ -185,7 +185,7 @@ export async function fetchUserInfo(
 		id: data.sub,
 		name: data.name ?? "",
 		email: data.email ?? "",
-		image: data.picture ?? undefined,
+		image: data.picture && data.picture !== "—" ? data.picture : undefined,
 		role: data.role ?? "user",
 	};
 }

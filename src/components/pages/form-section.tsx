@@ -159,7 +159,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 							</select>
 						) : field.type === "file" ? (
 							<div className="mt-1">
-								{values[field.key] && (
+								{values[field.key] && values[field.key].startsWith("http") && (
 									<img
 										src={values[field.key]}
 										alt="Preview"
