@@ -3,6 +3,7 @@ node_modules/
 dist/
 .vinxi/
 .claude/
+CLAUDE.md
 .tanstack/
 .env
 .env.local

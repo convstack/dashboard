@@ -51,6 +51,7 @@ export interface RowAction {
 	method: "POST" | "PUT" | "DELETE";
 	variant?: "default" | "danger";
 	confirm?: string;
+	link?: string;
 }
 
 export interface DataTableConfig {
@@ -87,7 +88,6 @@ export interface FormConfig {
 	submitLabel?: string;
 	submitEndpoint?: string;
 	method?: string;
-	collapsed?: boolean;
 }
 
 export interface PageSection {

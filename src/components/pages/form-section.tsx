@@ -14,7 +14,6 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	const [error, setError] = useState("");
 	const [values, setValues] = useState<Record<string, string>>({});
 	const [prefilled, setPrefilled] = useState(false);
-	const [expanded, setExpanded] = useState(false);
 
 	const config = section.config as unknown as FormConfig;
 
@@ -111,36 +110,10 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		);
 	}
 
-	if (config.collapsed && !expanded) {
-		return (
-			<div className="rounded-lg border border-(--border) p-4 flex items-center justify-between">
-				<h3 className="text-sm font-semibold">{config.title || "Edit"}</h3>
-				<button
-					type="button"
-					onClick={() => setExpanded(true)}
-					className="rounded-md border border-(--border) px-3 py-1.5 text-sm font-medium hover:bg-(--accent)"
-				>
-					{config.title || "Edit"}
-				</button>
-			</div>
-		);
-	}
-
 	return (
 		<div className="rounded-lg border border-(--border) p-6">
 			{config.title && (
-				<div className="flex items-center justify-between mb-4">
-					<h3 className="text-sm font-semibold">{config.title}</h3>
-					{config.collapsed && (
-						<button
-							type="button"
-							onClick={() => setExpanded(false)}
-							className="text-xs text-(--muted-foreground) hover:text-(--foreground)"
-						>
-							Cancel
-						</button>
-					)}
-				</div>
+				<h3 className="text-sm font-semibold mb-4">{config.title}</h3>
 			)}
 			<form onSubmit={handleSubmit} className="space-y-4">
 				{error && (
