@@ -90,7 +90,7 @@ export async function proxyRequest(
 			headers: proxyHeaders,
 			body:
 				request.method !== "GET" && request.method !== "HEAD"
-					? await request.text()
+					? await request.arrayBuffer()
 					: undefined,
 			signal: controller.signal,
 		});
