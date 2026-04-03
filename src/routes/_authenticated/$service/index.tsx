@@ -30,11 +30,15 @@ export const Route = createFileRoute("/_authenticated/$service/")({
 				}
 				const endpoint = interpolateEndpoint(section.endpoint, {});
 				try {
-					const response = await fetch(`${service.baseUrl}${endpoint}`, {
-						headers: {
-							Authorization: `Bearer ${ctx.session.accessToken}`,
-						},
-					});
+					const isServer = typeof window === "undefined";
+					const url = isServer
+						? `${service.baseUrl}${endpoint}`
+						: `/api/proxy/${service.slug}${endpoint}`;
+					const headers: Record<string, string> = {};
+					if (isServer) {
+						headers.Authorization = `Bearer ${ctx.session.accessToken}`;
+					}
+					const response = await fetch(url, { headers });
 					if (!response.ok) return null;
 					return response.json();
 				} catch {

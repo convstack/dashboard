@@ -98,6 +98,7 @@ export interface SessionData {
 		email: string;
 		image?: string;
 		role: string;
+		deletionPending?: boolean;
 	};
 }
 
@@ -187,6 +188,7 @@ export async function fetchUserInfo(
 		email: data.email ?? "",
 		image: data.picture && data.picture !== "—" ? data.picture : undefined,
 		role: data.role ?? "user",
+		deletionPending: data.deletionPending ?? false,
 	};
 }
 
