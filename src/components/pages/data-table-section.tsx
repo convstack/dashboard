@@ -12,6 +12,7 @@ interface TableData {
 	columns: { key: string; label: string }[];
 	rows: Record<string, unknown>[];
 	total?: number;
+	rowActions?: RowAction[];
 }
 
 interface Props {
@@ -82,7 +83,9 @@ export function DataTableSection({
 		});
 	}
 
-	const rowActions = config.rowActions ?? [];
+	const rowActions = config.readOnly
+		? []
+		: [...(config.rowActions ?? []), ...(data?.rowActions ?? [])];
 	const hasRowActions = rowActions.length > 0;
 
 	return (
@@ -94,7 +97,7 @@ export function DataTableSection({
 					) : (
 						<div />
 					)}
-					{config.createLink && (
+					{config.createLink && !config.readOnly && (
 						<button
 							type="button"
 							onClick={() => {

@@ -38,8 +38,18 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 				method: action.method,
 			});
 			if (response.ok) {
-				setResult({ ok: true, message: "Action completed successfully" });
-				router.invalidate();
+				if (action.redirect) {
+					router.navigate({
+						to: "/$service/$",
+						params: {
+							service: serviceSlug,
+							_splat: action.redirect.replace(/^\//, ""),
+						},
+					});
+				} else {
+					setResult({ ok: true, message: "Action completed successfully" });
+					router.invalidate();
+				}
 			} else {
 				const body = await response.json().catch(() => null);
 				setResult({

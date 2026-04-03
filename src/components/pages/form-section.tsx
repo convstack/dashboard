@@ -90,9 +90,14 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 				const data = await response.json().catch(() => null);
 				setError(data?.error || `Error: ${response.status}`);
 			} else {
-				setSuccess(true);
-				// Reload to reflect changes in sidebar/header
-				setTimeout(() => window.location.reload(), 500);
+				const responseData = await response.json().catch(() => null);
+				if (responseData?.redirect) {
+					// Navigate to the redirect URL (absolute path)
+					window.location.href = responseData.redirect;
+				} else {
+					setSuccess(true);
+					setTimeout(() => window.location.reload(), 500);
+				}
 			}
 		} catch {
 			setError("Network error");

@@ -53,6 +53,7 @@ export interface RowAction {
 	variant?: "default" | "danger";
 	confirm?: string;
 	link?: string;
+	redirect?: string;
 }
 
 export interface DataTableConfig {
@@ -61,6 +62,7 @@ export interface DataTableConfig {
 	rowActions?: RowAction[];
 	createLink?: string;
 	createLabel?: string;
+	readOnly?: boolean;
 }
 
 export interface DetailConfig {

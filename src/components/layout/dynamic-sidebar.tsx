@@ -59,15 +59,40 @@ export function DynamicSidebar({ session, services }: Props) {
 			<nav className="flex-1 px-3 space-y-1 overflow-y-auto">
 				<Link
 					to="/home"
+					activeOptions={{ exact: true }}
 					className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-(--sidebar-foreground) hover:bg-(--sidebar-accent) hover:text-(--sidebar-accent-foreground) [&.active]:bg-(--sidebar-accent) [&.active]:font-medium [&.active]:text-(--sidebar-accent-foreground)"
 				>
 					<LayoutDashboard className="h-4 w-4" />
 					Home
 				</Link>
 
+				{/* Inline services (like Departments) — rendered as simple nav links under Home */}
+				{services
+					.filter(
+						(s) =>
+							s.uiManifest &&
+							s.status !== "inactive" &&
+							s.slug === "departments",
+					)
+					.flatMap((service) =>
+						(service.uiManifest?.navigation ?? []).map((item) => (
+							<NavLink
+								key={`${service.slug}${item.path}`}
+								to={`/${service.slug}${item.path === "/" ? "" : item.path}`}
+								label={item.label}
+								icon={item.icon}
+							/>
+						)),
+					)}
+
 				{/* Dynamic service sections — user services first, then admin */}
 				{services
-					.filter((s) => s.uiManifest && s.status !== "inactive")
+					.filter(
+						(s) =>
+							s.uiManifest &&
+							s.status !== "inactive" &&
+							s.slug !== "departments",
+					)
 					.sort((a, b) => {
 						if (a.type === "user" && b.type !== "user") return -1;
 						if (a.type !== "user" && b.type === "user") return 1;
