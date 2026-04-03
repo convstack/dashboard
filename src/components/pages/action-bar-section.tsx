@@ -15,6 +15,10 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 	const router = useRouter();
 	const [pendingAction, setPendingAction] = useState<RowAction | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [secretResponse, setSecretResponse] = useState<{
+		secrets: Record<string, string>;
+		message?: string;
+	} | null>(null);
 	const [result, setResult] = useState<{
 		ok: boolean;
 		message: string;
@@ -38,7 +42,19 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 				method: action.method,
 			});
 			if (response.ok) {
-				if (action.redirect) {
+				const body = await response.json().catch(() => null);
+
+				// Check for secrets in response
+				const secrets: Record<string, string> = {};
+				if (body?.apiKey) secrets.apiKey = body.apiKey;
+				if (body?.clientSecret) secrets.clientSecret = body.clientSecret;
+
+				if (Object.keys(secrets).length > 0) {
+					setSecretResponse({
+						secrets,
+						message: body?.message,
+					});
+				} else if (action.redirect) {
 					router.navigate({
 						to: "/$service/$",
 						params: {
@@ -86,6 +102,50 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 
 	const safeActions = data.actions.filter((a) => a.variant !== "danger");
 	const dangerActions = data.actions.filter((a) => a.variant === "danger");
+
+	if (secretResponse) {
+		const labels: Record<string, string> = {
+			apiKey: "API Key",
+			clientSecret: "Client Secret",
+		};
+		return (
+			<div className="rounded-lg border border-(--border) p-4 space-y-4">
+				{secretResponse.message && (
+					<div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+						{secretResponse.message}
+					</div>
+				)}
+				<div className="space-y-3">
+					{Object.entries(secretResponse.secrets).map(([key, value]) => (
+						<div key={key}>
+							<p className="text-xs font-medium text-(--muted-foreground)">
+								{labels[key] || key}
+							</p>
+							<div className="mt-1 flex items-center gap-2">
+								<code className="flex-1 block rounded bg-(--muted) px-3 py-2 text-sm font-mono break-all">
+									{value}
+								</code>
+								<button
+									type="button"
+									onClick={() => navigator.clipboard.writeText(value)}
+									className="shrink-0 rounded-md border border-(--border) px-3 py-2 text-xs hover:bg-(--accent)"
+								>
+									Copy
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+				<button
+					type="button"
+					onClick={() => setSecretResponse(null)}
+					className="rounded-md border border-(--border) px-4 py-2 text-sm font-medium hover:bg-(--accent)"
+				>
+					Done
+				</button>
+			</div>
+		);
+	}
 
 	return (
 		<div className="rounded-lg border border-(--border) p-4 space-y-3">

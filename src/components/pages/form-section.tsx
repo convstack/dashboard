@@ -15,6 +15,11 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	const [error, setError] = useState("");
 	const [values, setValues] = useState<Record<string, string>>({});
 	const [prefilled, setPrefilled] = useState(false);
+	const [secretResponse, setSecretResponse] = useState<{
+		secrets: Record<string, string>;
+		redirect?: string;
+		message?: string;
+	} | null>(null);
 
 	const config = section.config as unknown as FormConfig;
 
@@ -91,8 +96,21 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 				setError(data?.error || `Error: ${response.status}`);
 			} else {
 				const responseData = await response.json().catch(() => null);
-				if (responseData?.redirect) {
-					// Navigate to the redirect URL (absolute path)
+
+				// Check if response contains secrets that need to be shown
+				const secrets: Record<string, string> = {};
+				if (responseData?.apiKey) secrets.apiKey = responseData.apiKey;
+				if (responseData?.clientSecret)
+					secrets.clientSecret = responseData.clientSecret;
+				if (responseData?.clientId) secrets.clientId = responseData.clientId;
+
+				if (Object.keys(secrets).length > 0) {
+					setSecretResponse({
+						secrets,
+						redirect: responseData?.redirect,
+						message: responseData?.message,
+					});
+				} else if (responseData?.redirect) {
 					window.location.href = responseData.redirect;
 				} else {
 					setSuccess(true);
@@ -104,6 +122,58 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		}
 		setLoading(false);
 	};
+
+	if (secretResponse) {
+		const labels: Record<string, string> = {
+			apiKey: "API Key",
+			clientId: "Client ID",
+			clientSecret: "Client Secret",
+		};
+		return (
+			<div className="rounded-lg border border-(--border) p-6 space-y-4">
+				<h3 className="text-sm font-semibold">Created Successfully</h3>
+				{secretResponse.message && (
+					<div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+						{secretResponse.message}
+					</div>
+				)}
+				<div className="space-y-3">
+					{Object.entries(secretResponse.secrets).map(([key, value]) => (
+						<div key={key}>
+							<p className="text-xs font-medium text-(--muted-foreground)">
+								{labels[key] || key}
+							</p>
+							<div className="mt-1 flex items-center gap-2">
+								<code className="flex-1 block rounded bg-(--muted) px-3 py-2 text-sm font-mono break-all">
+									{value}
+								</code>
+								<button
+									type="button"
+									onClick={() => {
+										navigator.clipboard.writeText(value);
+									}}
+									className="shrink-0 rounded-md border border-(--border) px-3 py-2 text-xs hover:bg-(--accent)"
+								>
+									Copy
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+				{secretResponse.redirect && (
+					<button
+						type="button"
+						onClick={() => {
+							window.location.href = secretResponse.redirect ?? "/";
+						}}
+						className="rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
+					>
+						Continue
+					</button>
+				)}
+			</div>
+		);
+	}
 
 	if (!prefilled) {
 		return (
