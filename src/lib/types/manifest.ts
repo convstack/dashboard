@@ -79,12 +79,16 @@ export interface FormConfig {
 			| "select"
 			| "textarea"
 			| "password"
-			| "file";
+			| "file"
+			| "search";
 		required?: boolean;
 		placeholder?: string;
 		options?: Array<{ label: string; value: string }>;
 		uploadEndpoint?: string;
 		accept?: string;
+		searchEndpoint?: string;
+		searchResultLabel?: string;
+		searchResultValue?: string;
 	}>;
 	submitLabel?: string;
 	submitEndpoint?: string;

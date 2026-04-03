@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SearchField } from "~/components/ui/search-field";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
 import type { FormConfig, PageSection } from "~/lib/types/manifest";
 
@@ -157,6 +158,17 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 									</option>
 								))}
 							</select>
+						) : field.type === "search" ? (
+							<SearchField
+								id={field.key}
+								serviceSlug={serviceSlug}
+								searchEndpoint={field.searchEndpoint || ""}
+								resultLabel={field.searchResultLabel}
+								resultValue={field.searchResultValue}
+								placeholder={field.placeholder}
+								value={values[field.key] ?? ""}
+								onChange={(v) => handleChange(field.key, v)}
+							/>
 						) : field.type === "file" ? (
 							<div className="mt-1">
 								{values[field.key] && values[field.key].startsWith("http") && (
