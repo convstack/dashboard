@@ -61,8 +61,9 @@ export async function proxyRequest(
 		});
 	}
 
-	// 3. Build target URL
-	const targetUrl = `${service.baseUrl}/${remainingPath}`;
+	// 3. Build target URL (preserve query string)
+	const queryString = new URL(request.url).search;
+	const targetUrl = `${service.baseUrl}/${remainingPath}${queryString}`;
 
 	// 4. Forward request with timeout
 	const controller = new AbortController();
