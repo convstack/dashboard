@@ -5,8 +5,9 @@ import { LANYARD_URL } from "~/lib/lanyard-client";
 
 const getLogoutUrlFn = createServerFn({ method: "GET" }).handler(async () => {
 	const dashboardUrl = process.env.DASHBOARD_URL || "http://localhost:4000";
+	const clientId = process.env.DASHBOARD_CLIENT_ID || "dashboard";
 	return {
-		lanyardEndSession: `${LANYARD_URL}/api/auth/oauth2/endsession?post_logout_redirect_uri=${encodeURIComponent(`${dashboardUrl}/login`)}`,
+		lanyardEndSession: `${LANYARD_URL}/api/auth/oauth2/endsession?client_id=${encodeURIComponent(clientId)}&post_logout_redirect_uri=${encodeURIComponent(`${dashboardUrl}/login`)}`,
 	};
 });
 
