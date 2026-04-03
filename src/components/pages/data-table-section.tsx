@@ -97,15 +97,19 @@ export function DataTableSection({
 					{config.createLink && (
 						<button
 							type="button"
-							onClick={() =>
+							onClick={() => {
+								const link = interpolateEndpoint(
+									config.createLink ?? "",
+									pathParams,
+								);
 								router.navigate({
 									to: "/$service/$",
 									params: {
 										service: serviceSlug,
-										_splat: (config.createLink ?? "").replace(/^\//, ""),
+										_splat: link.replace(/^\//, ""),
 									},
-								})
-							}
+								});
+							}}
 							className="rounded-md bg-(--primary) px-3 py-1.5 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
 						>
 							{config.createLabel || "Create"}
