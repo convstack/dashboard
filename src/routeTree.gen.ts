@@ -19,6 +19,7 @@ import { Route as AuthenticatedServiceIndexRouteImport } from './routes/_authent
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
+import { Route as ApiAuthBackchannelLogoutRouteImport } from './routes/api/auth/backchannel-logout'
 import { Route as AuthenticatedServiceSplatRouteImport } from './routes/_authenticated/$service/$'
 import { Route as ApiProxyServiceSplatRouteImport } from './routes/api/proxy/$service/$'
 
@@ -72,6 +73,12 @@ const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
   path: '/api/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthBackchannelLogoutRoute =
+  ApiAuthBackchannelLogoutRouteImport.update({
+    id: '/api/auth/backchannel-logout',
+    path: '/api/auth/backchannel-logout',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedServiceSplatRoute =
   AuthenticatedServiceSplatRouteImport.update({
     id: '/$service/$',
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/logout': typeof AuthLogoutRoute
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
+  '/api/auth/backchannel-logout': typeof ApiAuthBackchannelLogoutRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
@@ -104,6 +112,7 @@ export interface FileRoutesByTo {
   '/logout': typeof AuthLogoutRoute
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
+  '/api/auth/backchannel-logout': typeof ApiAuthBackchannelLogoutRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
@@ -119,6 +128,7 @@ export interface FileRoutesById {
   '/_auth/logout': typeof AuthLogoutRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/$service/$': typeof AuthenticatedServiceSplatRoute
+  '/api/auth/backchannel-logout': typeof ApiAuthBackchannelLogoutRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/home'
     | '/$service/$'
+    | '/api/auth/backchannel-logout'
     | '/api/auth/callback'
     | '/api/auth/logout'
     | '/api/auth/refresh'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/home'
     | '/$service/$'
+    | '/api/auth/backchannel-logout'
     | '/api/auth/callback'
     | '/api/auth/logout'
     | '/api/auth/refresh'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
     | '/_auth/logout'
     | '/_authenticated/home'
     | '/_authenticated/$service/$'
+    | '/api/auth/backchannel-logout'
     | '/api/auth/callback'
     | '/api/auth/logout'
     | '/api/auth/refresh'
@@ -174,6 +187,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  ApiAuthBackchannelLogoutRoute: typeof ApiAuthBackchannelLogoutRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
@@ -252,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/backchannel-logout': {
+      id: '/api/auth/backchannel-logout'
+      path: '/api/auth/backchannel-logout'
+      fullPath: '/api/auth/backchannel-logout'
+      preLoaderRoute: typeof ApiAuthBackchannelLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/$service/$': {
       id: '/_authenticated/$service/$'
       path: '/$service/$'
@@ -291,6 +312,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  ApiAuthBackchannelLogoutRoute: ApiAuthBackchannelLogoutRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
