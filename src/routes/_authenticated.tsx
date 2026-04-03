@@ -14,11 +14,18 @@ export interface AuthenticatedContext {
 // Module-level cache that survives across all router operations
 let serviceCache: ServiceCatalogEntry[] = [];
 let lastFetchTime = 0;
+let cachedForToken = "";
 const CACHE_DURATION = 60_000; // 1 minute
 
 async function getServices(
 	accessToken: string,
 ): Promise<ServiceCatalogEntry[]> {
+	// Invalidate cache if user changed (different token)
+	if (cachedForToken && cachedForToken !== accessToken) {
+		serviceCache = [];
+		lastFetchTime = 0;
+	}
+
 	// Return cache if fresh
 	if (serviceCache.length > 0 && Date.now() - lastFetchTime < CACHE_DURATION) {
 		return serviceCache;
@@ -29,6 +36,7 @@ async function getServices(
 		if (fresh.length > 0) {
 			serviceCache = fresh;
 			lastFetchTime = Date.now();
+			cachedForToken = accessToken;
 		}
 	} catch {
 		// Keep stale cache
