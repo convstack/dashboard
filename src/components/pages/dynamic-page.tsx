@@ -7,6 +7,8 @@ import { ActionBarSection } from "./action-bar-section";
 import { DataTableSection } from "./data-table-section";
 import { DetailSection } from "./detail-section";
 import { FormSection } from "./form-section";
+import { MarkdownEditorSection } from "./markdown-editor-section";
+import { MarkdownSection } from "./markdown-section";
 
 interface Props {
 	page: PageDefinition;
@@ -118,6 +120,23 @@ export function DynamicPage({
 							return <TwoFactorSection key={key} serviceSlug={service.slug} />;
 						case "passkey-manager":
 							return <PasskeySection key={key} serviceSlug={service.slug} />;
+						case "markdown":
+							return (
+								<MarkdownSection
+									key={key}
+									data={data as Parameters<typeof MarkdownSection>[0]["data"]}
+									serviceSlug={service.slug}
+								/>
+							);
+						case "markdown-editor":
+							return (
+								<MarkdownEditorSection
+									key={key}
+									section={section}
+									serviceSlug={service.slug}
+									pathParams={pathParams}
+								/>
+							);
 						default:
 							return (
 								<div

@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/$service/")({
 					section.type === "form" ||
 					section.type === "two-factor" ||
 					section.type === "passkey-manager" ||
+					section.type === "markdown-editor" ||
 					section.type === "widget-grid"
 				) {
 					return null;

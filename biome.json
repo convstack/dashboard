@@ -40,7 +40,11 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/routes/__root.tsx"],
+			"includes": [
+				"src/routes/__root.tsx",
+				"src/components/pages/markdown-section.tsx",
+				"src/components/pages/markdown-editor-section.tsx"
+			],
 			"linter": {
 				"rules": {
 					"security": {

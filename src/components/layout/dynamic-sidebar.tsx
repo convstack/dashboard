@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { LayoutDashboard } from "lucide-react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { ArrowLeft, LayoutDashboard } from "lucide-react";
 import type { SessionData } from "~/lib/auth";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import { DynamicIcon } from "./dynamic-icon";
@@ -41,12 +41,82 @@ function NavLink({
 }
 
 export function DynamicSidebar({ session, services }: Props) {
+	const location = useLocation();
 	const initials = (session.user.name || session.user.email || "?")
 		.split(" ")
 		.map((w) => w[0])
 		.join("")
 		.toUpperCase()
 		.slice(0, 2);
+
+	// Check if we're inside a service that has its own sidebar
+	const activeServiceWithSidebar = services.find(
+		(s) =>
+			(s.uiManifest?.sidebar && location.pathname.startsWith(`/${s.slug}/`)) ||
+			location.pathname === `/${s.slug}`,
+	);
+
+	const svcManifest = activeServiceWithSidebar?.uiManifest;
+	const svcSidebar = svcManifest?.sidebar;
+
+	if (activeServiceWithSidebar && svcManifest && svcSidebar) {
+		const svc = activeServiceWithSidebar;
+		return (
+			<aside className="w-64 border-r border-(--border) bg-(--sidebar-background) flex flex-col">
+				<div className="p-5">
+					<Link
+						to="/home"
+						className="flex items-center gap-2 text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors"
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Back to Dashboard
+					</Link>
+					<div className="mt-3 flex items-center gap-2">
+						<DynamicIcon name={svcManifest.icon ?? "box"} className="h-5 w-5" />
+						<span className="text-lg font-bold tracking-tight">
+							{svcManifest.name}
+						</span>
+					</div>
+				</div>
+
+				<nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+					{(svcSidebar.items ?? []).map((item) => (
+						<NavLink
+							key={item.path}
+							to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}
+							label={item.label}
+							icon={item.icon}
+						/>
+					))}
+				</nav>
+
+				{/* User info at bottom */}
+				<div className="border-t border-(--border) p-3">
+					<div className="flex items-center gap-3 rounded-md px-2 py-2">
+						{session.user.image ? (
+							<img
+								src={session.user.image}
+								alt=""
+								className="h-8 w-8 rounded-full object-cover"
+							/>
+						) : (
+							<div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--primary) text-xs font-medium text-(--primary-foreground)">
+								{initials}
+							</div>
+						)}
+						<div className="flex-1 min-w-0">
+							<p className="truncate text-sm font-medium">
+								{session.user.name}
+							</p>
+							<p className="truncate text-xs text-(--muted-foreground)">
+								{session.user.email}
+							</p>
+						</div>
+					</div>
+				</div>
+			</aside>
+		);
+	}
 
 	return (
 		<aside className="w-64 border-r border-(--border) bg-(--sidebar-background) flex flex-col">
