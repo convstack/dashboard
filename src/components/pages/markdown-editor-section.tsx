@@ -149,7 +149,8 @@ export function MarkdownEditorSection({
 
 			{showPreview ? (
 				<article
-					className="prose prose-neutral dark:prose-invert max-w-none min-h-[300px] rounded-lg border border-(--border) p-6"
+					className="prose prose-neutral dark:prose-invert max-w-none min-h-75 rounded-lg border border-(--border) p-6"
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: dangerouslySetInnerHTML is needed for markdown
 					dangerouslySetInnerHTML={{ __html: previewHtml }}
 				/>
 			) : (
@@ -158,7 +159,7 @@ export function MarkdownEditorSection({
 					onChange={(e) => setContent(e.target.value)}
 					placeholder="Write your content in Markdown..."
 					rows={16}
-					className="block w-full rounded-lg border border-(--input) bg-(--background) px-4 py-3 text-sm font-mono resize-y min-h-[300px]"
+					className="block w-full rounded-lg border border-(--input) bg-(--background) px-4 py-3 text-sm font-mono resize-y min-h-75"
 				/>
 			)}
 
