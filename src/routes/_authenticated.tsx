@@ -15,7 +15,7 @@ export interface AuthenticatedContext {
 let serviceCache: ServiceCatalogEntry[] = [];
 let lastFetchTime = 0;
 let cachedForToken = "";
-const CACHE_DURATION = 60_000; // 1 minute
+const CACHE_DURATION = 30_000; // 30 seconds
 
 async function getServices(
 	accessToken: string,
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/_authenticated")({
 		const services = await getServices(session.accessToken);
 		return { session, services } as AuthenticatedContext;
 	},
-	shouldReload: false,
+	shouldReload: true,
 	component: AuthenticatedLayout,
 	errorComponent: ({ error }) => (
 		<div className="flex min-h-screen items-center justify-center">
