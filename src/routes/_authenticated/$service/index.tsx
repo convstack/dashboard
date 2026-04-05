@@ -38,6 +38,9 @@ export const Route = createFileRoute("/_authenticated/$service/")({
 					const headers: Record<string, string> = {};
 					if (isServer) {
 						headers.Authorization = `Bearer ${ctx.session.accessToken}`;
+						headers["X-User-Id"] = ctx.session.user.id;
+						headers["X-User-Role"] = ctx.session.user.role;
+						headers["X-User-Email"] = ctx.session.user.email;
 					}
 					const response = await fetch(url, { headers });
 					if (!response.ok) return null;

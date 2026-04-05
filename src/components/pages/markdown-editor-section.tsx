@@ -1,7 +1,7 @@
-import DOMPurify from "dompurify";
-import { marked } from "marked";
+import DOMPurify from "isomorphic-dompurify";
 import { useCallback, useEffect, useState } from "react";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
+import { marked, preprocessMarkdown } from "~/lib/markdown";
 import type { PageSection } from "~/lib/types/manifest";
 
 interface MarkdownEditorConfig {
@@ -26,8 +26,11 @@ export function MarkdownEditorSection({
 	const contentField = config.contentField || "content";
 	const titleField = config.titleField || "title";
 
+	const isEdit = config.method === "PUT";
+
 	const [title, setTitle] = useState("");
 	const [content, setContent] = useState("");
+	const [editSummary, setEditSummary] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [prefilled, setPrefilled] = useState(false);
 	const [error, setError] = useState("");
@@ -67,6 +70,9 @@ export function MarkdownEditorSection({
 		const body: Record<string, string> = {};
 		body[titleField] = title;
 		body[contentField] = content;
+		if (isEdit && editSummary.trim()) {
+			body.editSummary = editSummary.trim();
+		}
 
 		try {
 			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`, {
@@ -102,9 +108,13 @@ export function MarkdownEditorSection({
 	}
 
 	const previewHtml = DOMPurify.sanitize(
-		marked.parse(content || "*Nothing to preview*", {
+		marked.parse(preprocessMarkdown(content || "*Nothing to preview*"), {
 			async: false,
 		}) as string,
+		{
+			ADD_TAGS: ["input"],
+			ADD_ATTR: ["checked", "disabled", "type"],
+		},
 	);
 
 	return (
@@ -164,6 +174,15 @@ export function MarkdownEditorSection({
 			)}
 
 			<div className="flex items-center gap-3">
+				{isEdit && (
+					<input
+						type="text"
+						value={editSummary}
+						onChange={(e) => setEditSummary(e.target.value)}
+						placeholder="Edit summary (optional)"
+						className="flex-1 rounded-md border border-(--input) bg-(--background) px-3 py-2 text-sm"
+					/>
+				)}
 				<button
 					type="button"
 					onClick={handleSubmit}

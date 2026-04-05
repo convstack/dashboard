@@ -1,6 +1,11 @@
 import { useRouter } from "@tanstack/react-router";
-import DOMPurify from "dompurify";
-import { marked } from "marked";
+import DOMPurify from "isomorphic-dompurify";
+import { marked, preprocessMarkdown } from "~/lib/markdown";
+
+interface DiffLine {
+	type: "added" | "removed" | "unchanged";
+	text: string;
+}
 
 interface MarkdownData {
 	title?: string;
@@ -14,11 +19,55 @@ interface MarkdownData {
 		editLink?: string;
 		historyLink?: string;
 	};
+	diff?: DiffLine[];
 }
 
 interface Props {
 	data: MarkdownData | null;
 	serviceSlug: string;
+}
+
+function DiffView({ diff }: { diff: DiffLine[] }) {
+	return (
+		<div className="mt-6 rounded-lg border border-(--border) overflow-hidden">
+			<div className="bg-(--muted) px-4 py-2 text-xs font-semibold text-(--muted-foreground)">
+				Changes from this revision to current version
+			</div>
+			<pre className="overflow-x-auto text-sm font-mono leading-relaxed">
+				{diff.map((line, i) => {
+					const key = `${line.type}-${i}`;
+					if (line.type === "added") {
+						return (
+							<div
+								key={key}
+								className="bg-green-500/15 text-green-700 dark:text-green-400 px-4 py-0.5"
+							>
+								<span className="select-none mr-2">+</span>
+								{line.text}
+							</div>
+						);
+					}
+					if (line.type === "removed") {
+						return (
+							<div
+								key={key}
+								className="bg-red-500/15 text-red-700 dark:text-red-400 px-4 py-0.5"
+							>
+								<span className="select-none mr-2">-</span>
+								{line.text}
+							</div>
+						);
+					}
+					return (
+						<div key={key} className="px-4 py-0.5 text-(--muted-foreground)">
+							<span className="select-none mr-2">&nbsp;</span>
+							{line.text}
+						</div>
+					);
+				})}
+			</pre>
+		</div>
+	);
 }
 
 export function MarkdownSection({ data, serviceSlug }: Props) {
@@ -37,8 +86,13 @@ export function MarkdownSection({ data, serviceSlug }: Props) {
 		);
 	}
 
-	const rawHtml = marked.parse(data.content, { async: false }) as string;
-	const cleanHtml = DOMPurify.sanitize(rawHtml);
+	const rawHtml = marked.parse(preprocessMarkdown(data.content), {
+		async: false,
+	}) as string;
+	const cleanHtml = DOMPurify.sanitize(rawHtml, {
+		ADD_TAGS: ["input"],
+		ADD_ATTR: ["checked", "disabled", "type"],
+	});
 
 	return (
 		<div>
@@ -85,6 +139,8 @@ export function MarkdownSection({ data, serviceSlug }: Props) {
 				className="prose prose-neutral dark:prose-invert max-w-none"
 				dangerouslySetInnerHTML={{ __html: cleanHtml }}
 			/>
+
+			{data.diff && data.diff.length > 0 && <DiffView diff={data.diff} />}
 
 			{data.metadata && (
 				<div className="mt-8 border-t border-(--border) pt-4 text-xs text-(--muted-foreground)">

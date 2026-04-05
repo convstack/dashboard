@@ -78,7 +78,10 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		// Build body from current values (pre-filled + user changes)
 		const body: Record<string, string> = {};
 		for (const field of config.fields) {
-			const val = values[field.key];
+			const val = values[field.key]
+				?? (field.type === "select" && field.options?.length
+					? field.options[0].value
+					: undefined);
 			if (val !== undefined) {
 				body[field.key] = val;
 			}
