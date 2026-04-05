@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatDateShort } from "~/lib/format";
 import type { JsonValue, PageSection } from "~/lib/types/manifest";
 
 interface SearchResult {
@@ -119,9 +120,7 @@ export function SearchSection({ section, serviceSlug }: Props) {
 				slug: result.slug,
 				updatedBy: result.updatedBy,
 				updatedAt: result.updatedAt,
-				matches: [
-					{ snippet: result.snippet, matchText: result.matchText },
-				],
+				matches: [{ snippet: result.snippet, matchText: result.matchText }],
 			});
 		}
 	}
@@ -168,7 +167,7 @@ export function SearchSection({ section, serviceSlug }: Props) {
 								{group.updatedAt && (
 									<span className="text-xs text-(--muted-foreground) ml-2">
 										{group.updatedBy && `${group.updatedBy} · `}
-										{new Date(group.updatedAt).toLocaleDateString()}
+										{formatDateShort(group.updatedAt)}
 									</span>
 								)}
 							</div>
@@ -179,10 +178,7 @@ export function SearchSection({ section, serviceSlug }: Props) {
 										to={buildHref(group.slug)}
 										className="block px-4 py-2 text-sm text-(--muted-foreground) hover:bg-(--accent) transition-colors"
 									>
-										<HighlightedText
-											text={match.snippet}
-											query={query}
-										/>
+										<HighlightedText text={match.snippet} query={query} />
 									</Link>
 								))}
 							</div>

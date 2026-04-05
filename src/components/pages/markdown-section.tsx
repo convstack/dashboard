@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import DOMPurify from "isomorphic-dompurify";
 import { useEffect, useRef } from "react";
+import { formatDate } from "~/lib/format";
 import { marked, preprocessMarkdown } from "~/lib/markdown";
 
 interface DiffLine {
@@ -116,7 +117,8 @@ export function MarkdownSection({ data, serviceSlug }: Props) {
 			const parent = m.node.parentNode;
 			if (!parent) continue;
 
-			if (after) parent.insertBefore(document.createTextNode(after), m.node.nextSibling);
+			if (after)
+				parent.insertBefore(document.createTextNode(after), m.node.nextSibling);
 			parent.insertBefore(mark, m.node.nextSibling);
 			if (before) parent.insertBefore(document.createTextNode(before), mark);
 			parent.removeChild(m.node);
@@ -206,9 +208,9 @@ export function MarkdownSection({ data, serviceSlug }: Props) {
 						<span>Last edited by {data.metadata.lastEditedBy}</span>
 					)}
 					{data.metadata.lastEditedAt && (
-						<span>
+						<span suppressHydrationWarning>
 							{data.metadata.lastEditedBy ? " · " : ""}
-							{new Date(data.metadata.lastEditedAt).toLocaleDateString()}
+							{formatDate(data.metadata.lastEditedAt)}
 						</span>
 					)}
 					{data.metadata.category && (

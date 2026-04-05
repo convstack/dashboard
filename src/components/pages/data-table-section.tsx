@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { formatCellValue } from "~/lib/format";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
 import type {
 	DataTableConfig,
@@ -147,8 +148,12 @@ export function DataTableSection({
 								className={`border-b border-(--border) last:border-b-0 hover:bg-(--accent) ${config.rowLink ? "cursor-pointer" : ""}`}
 							>
 								{data.columns.map((col) => (
-									<td key={col.key} className="px-4 py-3">
-										{String(row[col.key] ?? "")}
+									<td
+										key={col.key}
+										className="px-4 py-3"
+										suppressHydrationWarning
+									>
+										{formatCellValue(row[col.key])}
 									</td>
 								))}
 								{hasRowActions && (

@@ -1,5 +1,21 @@
 import DOMPurify from "isomorphic-dompurify";
-import { useCallback, useEffect, useState } from "react";
+import {
+	Bold,
+	Code,
+	Heading1,
+	Heading2,
+	Heading3,
+	ImageIcon,
+	Italic,
+	Link2,
+	List,
+	ListChecks,
+	ListOrdered,
+	Quote,
+	Strikethrough,
+	Table,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
 import { marked, preprocessMarkdown } from "~/lib/markdown";
 import type { PageSection } from "~/lib/types/manifest";
@@ -17,6 +33,181 @@ interface Props {
 	pathParams: Record<string, string>;
 }
 
+type FormatAction = {
+	icon: React.ReactNode;
+	label: string;
+	action: (
+		textarea: HTMLTextAreaElement,
+		setContent: (v: string) => void,
+	) => void;
+};
+
+function wrapSelection(
+	textarea: HTMLTextAreaElement,
+	setContent: (v: string) => void,
+	before: string,
+	after: string,
+) {
+	const { selectionStart, selectionEnd, value } = textarea;
+	const selected = value.slice(selectionStart, selectionEnd);
+	const replacement = `${before}${selected || "text"}${after}`;
+	const newValue =
+		value.slice(0, selectionStart) + replacement + value.slice(selectionEnd);
+	setContent(newValue);
+	requestAnimationFrame(() => {
+		textarea.focus();
+		const cursorPos = selectionStart + before.length;
+		const cursorEnd = cursorPos + (selected.length || 4);
+		textarea.setSelectionRange(cursorPos, cursorEnd);
+	});
+}
+
+function insertAtCursor(
+	textarea: HTMLTextAreaElement,
+	setContent: (v: string) => void,
+	text: string,
+) {
+	const { selectionStart, value } = textarea;
+	const newValue =
+		value.slice(0, selectionStart) + text + value.slice(selectionStart);
+	setContent(newValue);
+	requestAnimationFrame(() => {
+		textarea.focus();
+		const pos = selectionStart + text.length;
+		textarea.setSelectionRange(pos, pos);
+	});
+}
+
+function prependLine(
+	textarea: HTMLTextAreaElement,
+	setContent: (v: string) => void,
+	prefix: string,
+) {
+	const { selectionStart, selectionEnd, value } = textarea;
+	const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+	const lineEnd = value.indexOf("\n", selectionEnd);
+	const end = lineEnd === -1 ? value.length : lineEnd;
+	const lines = value.slice(lineStart, end).split("\n");
+	const prefixed = lines.map((l) => `${prefix}${l}`).join("\n");
+	const newValue = value.slice(0, lineStart) + prefixed + value.slice(end);
+	setContent(newValue);
+	requestAnimationFrame(() => {
+		textarea.focus();
+	});
+}
+
+const TABLE_TEMPLATE = `| Header | Header | Header |
+|--------|--------|--------|
+| Cell   | Cell   | Cell   |
+| Cell   | Cell   | Cell   |`;
+
+function buildActions(serviceSlug: string): FormatAction[] {
+	return [
+		{
+			icon: <Bold className="h-4 w-4" />,
+			label: "Bold",
+			action: (ta, set) => wrapSelection(ta, set, "**", "**"),
+		},
+		{
+			icon: <Italic className="h-4 w-4" />,
+			label: "Italic",
+			action: (ta, set) => wrapSelection(ta, set, "*", "*"),
+		},
+		{
+			icon: <Strikethrough className="h-4 w-4" />,
+			label: "Strikethrough",
+			action: (ta, set) => wrapSelection(ta, set, "~~", "~~"),
+		},
+		{
+			icon: <Code className="h-4 w-4" />,
+			label: "Code",
+			action: (ta, set) => wrapSelection(ta, set, "`", "`"),
+		},
+		{
+			icon: <Heading1 className="h-4 w-4" />,
+			label: "Heading 1",
+			action: (ta, set) => prependLine(ta, set, "# "),
+		},
+		{
+			icon: <Heading2 className="h-4 w-4" />,
+			label: "Heading 2",
+			action: (ta, set) => prependLine(ta, set, "## "),
+		},
+		{
+			icon: <Heading3 className="h-4 w-4" />,
+			label: "Heading 3",
+			action: (ta, set) => prependLine(ta, set, "### "),
+		},
+		{
+			icon: <List className="h-4 w-4" />,
+			label: "Bullet list",
+			action: (ta, set) => prependLine(ta, set, "- "),
+		},
+		{
+			icon: <ListOrdered className="h-4 w-4" />,
+			label: "Numbered list",
+			action: (ta, set) => prependLine(ta, set, "1. "),
+		},
+		{
+			icon: <ListChecks className="h-4 w-4" />,
+			label: "Task list",
+			action: (ta, set) => prependLine(ta, set, "- [ ] "),
+		},
+		{
+			icon: <Quote className="h-4 w-4" />,
+			label: "Blockquote",
+			action: (ta, set) => prependLine(ta, set, "> "),
+		},
+		{
+			icon: <Link2 className="h-4 w-4" />,
+			label: "Link",
+			action: (ta, set) => wrapSelection(ta, set, "[", "](url)"),
+		},
+		{
+			icon: <ImageIcon className="h-4 w-4" />,
+			label: "Upload image",
+			action: (ta, set) => {
+				const input = document.createElement("input");
+				input.type = "file";
+				input.accept = "image/*";
+				input.onchange = async () => {
+					const file = input.files?.[0];
+					if (file) {
+						const url = await uploadImage(file, serviceSlug);
+						if (url) {
+							insertAtCursor(ta, set, `![${file.name}](${url})`);
+						}
+					}
+				};
+				input.click();
+			},
+		},
+		{
+			icon: <Table className="h-4 w-4" />,
+			label: "Table",
+			action: (ta, set) => insertAtCursor(ta, set, `\n${TABLE_TEMPLATE}\n`),
+		},
+	];
+}
+
+async function uploadImage(
+	file: File,
+	serviceSlug: string,
+): Promise<string | null> {
+	const form = new FormData();
+	form.append("file", file);
+	try {
+		const res = await fetch(`/api/proxy/${serviceSlug}/api/upload/image`, {
+			method: "POST",
+			body: form,
+		});
+		const data = await res.json();
+		return data.url || null;
+	} catch {
+		return null;
+	}
+}
+
 export function MarkdownEditorSection({
 	section,
 	serviceSlug,
@@ -27,6 +218,7 @@ export function MarkdownEditorSection({
 	const titleField = config.titleField || "title";
 
 	const isEdit = config.method === "PUT";
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const [title, setTitle] = useState("");
 	const [content, setContent] = useState("");
@@ -36,8 +228,10 @@ export function MarkdownEditorSection({
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
+	const [uploading, setUploading] = useState(false);
 
 	const endpoint = interpolateEndpoint(section.endpoint, pathParams);
+	const actions = buildActions(serviceSlug);
 
 	// Pre-fill from GET (for editing existing pages)
 	const prefill = useCallback(async () => {
@@ -61,6 +255,64 @@ export function MarkdownEditorSection({
 	useEffect(() => {
 		prefill();
 	}, [prefill]);
+
+	// Handle paste and drop image uploads
+	const handleImageFile = useCallback(
+		async (file: File) => {
+			if (!file.type.startsWith("image/")) return;
+			const ta = textareaRef.current;
+			if (!ta) return;
+
+			setUploading(true);
+			const placeholder = `![Uploading ${file.name}...]()`;
+			insertAtCursor(ta, setContent, placeholder);
+
+			const url = await uploadImage(file, serviceSlug);
+			setUploading(false);
+
+			if (url) {
+				setContent((prev) =>
+					prev.replace(placeholder, `![${file.name}](${url})`),
+				);
+			} else {
+				setContent((prev) =>
+					prev.replace(placeholder, `<!-- Upload failed: ${file.name} -->`),
+				);
+			}
+		},
+		[serviceSlug],
+	);
+
+	const handlePaste = useCallback(
+		(e: React.ClipboardEvent) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
+			for (const item of items) {
+				if (item.type.startsWith("image/")) {
+					e.preventDefault();
+					const file = item.getAsFile();
+					if (file) handleImageFile(file);
+					return;
+				}
+			}
+		},
+		[handleImageFile],
+	);
+
+	const handleDrop = useCallback(
+		(e: React.DragEvent) => {
+			const files = e.dataTransfer?.files;
+			if (!files) return;
+			for (const file of files) {
+				if (file.type.startsWith("image/")) {
+					e.preventDefault();
+					handleImageFile(file);
+					return;
+				}
+			}
+		},
+		[handleImageFile],
+	);
 
 	const handleSubmit = async () => {
 		setLoading(true);
@@ -160,17 +412,45 @@ export function MarkdownEditorSection({
 			{showPreview ? (
 				<article
 					className="prose prose-neutral dark:prose-invert max-w-none min-h-75 rounded-lg border border-(--border) p-6"
-					// biome-ignore lint/security/noDangerouslySetInnerHtml: dangerouslySetInnerHTML is needed for markdown
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: needed for markdown preview
 					dangerouslySetInnerHTML={{ __html: previewHtml }}
 				/>
 			) : (
-				<textarea
-					value={content}
-					onChange={(e) => setContent(e.target.value)}
-					placeholder="Write your content in Markdown..."
-					rows={16}
-					className="block w-full rounded-lg border border-(--input) bg-(--background) px-4 py-3 text-sm font-mono resize-y min-h-75"
-				/>
+				<div>
+					{/* Floating toolbar */}
+					<div className="flex flex-wrap items-center gap-0.5 rounded-t-lg border border-b-0 border-(--border) bg-(--muted)/50 px-2 py-1.5">
+						{actions.map((action) => (
+							<button
+								key={action.label}
+								type="button"
+								title={action.label}
+								onClick={() => {
+									const ta = textareaRef.current;
+									if (ta) action.action(ta, setContent);
+								}}
+								className="rounded p-1.5 text-(--muted-foreground) hover:bg-(--accent) hover:text-(--foreground) transition-colors"
+							>
+								{action.icon}
+							</button>
+						))}
+						{uploading && (
+							<span className="ml-2 text-xs text-(--muted-foreground)">
+								Uploading...
+							</span>
+						)}
+					</div>
+					<textarea
+						ref={textareaRef}
+						value={content}
+						onChange={(e) => setContent(e.target.value)}
+						onPaste={handlePaste}
+						onDrop={handleDrop}
+						onDragOver={(e) => e.preventDefault()}
+						placeholder="Write your content in Markdown..."
+						rows={16}
+						className="block w-full rounded-b-lg border border-(--input) bg-(--background) px-4 py-3 text-sm font-mono resize-y min-h-75"
+					/>
+				</div>
 			)}
 
 			<div className="flex items-center gap-3">

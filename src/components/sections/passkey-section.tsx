@@ -1,5 +1,6 @@
 import { startRegistration } from "@simplewebauthn/browser";
 import { useCallback, useEffect, useState } from "react";
+import { formatDateShort } from "~/lib/format";
 
 interface Props {
 	serviceSlug: string;
@@ -179,12 +180,7 @@ export function PasskeySection({ serviceSlug }: Props) {
 								<div>
 									<p className="text-sm font-medium">{passkey.name}</p>
 									<p className="text-xs text-(--muted-foreground)">
-										Created{" "}
-										{new Date(passkey.createdAt).toLocaleDateString(undefined, {
-											year: "numeric",
-											month: "short",
-											day: "numeric",
-										})}
+										Created {formatDateShort(passkey.createdAt)}
 									</p>
 								</div>
 								<button
