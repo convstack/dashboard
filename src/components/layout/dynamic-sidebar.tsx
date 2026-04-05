@@ -18,10 +18,30 @@ interface TreeNode {
 
 function HealthDot({ status }: { status: string }) {
 	if (status === "active") {
-		return <span className="h-1.5 w-1.5 rounded-full bg-green-500" />;
+		return (
+			<span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Online" />
+		);
 	}
 	if (status === "degraded") {
-		return <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />;
+		return (
+			<span
+				className="h-1.5 w-1.5 rounded-full bg-yellow-500"
+				title="Degraded"
+			/>
+		);
+	}
+	if (status === "inactive") {
+		return (
+			<span className="h-1.5 w-1.5 rounded-full bg-red-500" title="Offline" />
+		);
+	}
+	if (status === "maintenance") {
+		return (
+			<span
+				className="h-1.5 w-1.5 rounded-full bg-blue-500"
+				title="Maintenance"
+			/>
+		);
 	}
 	return null;
 }
