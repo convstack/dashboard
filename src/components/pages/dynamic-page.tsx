@@ -9,6 +9,7 @@ import { DetailSection } from "./detail-section";
 import { FormSection } from "./form-section";
 import { MarkdownEditorSection } from "./markdown-editor-section";
 import { MarkdownSection } from "./markdown-section";
+import { SearchSection } from "./search-section";
 
 interface Props {
 	page: PageDefinition;
@@ -135,6 +136,14 @@ export function DynamicPage({
 									section={section}
 									serviceSlug={service.slug}
 									pathParams={pathParams}
+								/>
+							);
+						case "search":
+							return (
+								<SearchSection
+									key={key}
+									section={section}
+									serviceSlug={service.slug}
 								/>
 							);
 						default:

@@ -117,6 +117,7 @@ export interface PageSection {
 		| "passkey-manager"
 		| "markdown"
 		| "markdown-editor"
+		| "search"
 		| "custom";
 	endpoint: string;
 	config: Record<string, JsonValue>;

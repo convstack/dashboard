@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import DOMPurify from "isomorphic-dompurify";
+import { useEffect, useRef } from "react";
 import { marked, preprocessMarkdown } from "~/lib/markdown";
 
 interface DiffLine {
@@ -72,6 +73,62 @@ function DiffView({ diff }: { diff: DiffLine[] }) {
 
 export function MarkdownSection({ data, serviceSlug }: Props) {
 	const router = useRouter();
+	const articleRef = useRef<HTMLElement>(null);
+
+	useEffect(() => {
+		const el = articleRef.current;
+		if (!el) return;
+
+		const params = new URLSearchParams(window.location.search);
+		const highlight = params.get("highlight");
+		if (!highlight) return;
+
+		// Walk all text nodes and wrap matches in <mark>
+		const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+		const matches: { node: Text; index: number }[] = [];
+		let node: Text | null;
+		node = walker.nextNode() as Text | null;
+		while (node) {
+			const idx = node.textContent
+				?.toLowerCase()
+				.indexOf(highlight.toLowerCase());
+			if (idx !== undefined && idx !== -1) {
+				matches.push({ node, index: idx });
+			}
+			node = walker.nextNode() as Text | null;
+		}
+
+		if (matches.length === 0) return;
+
+		let firstMark: HTMLElement | null = null;
+		// Process in reverse to avoid invalidating earlier nodes
+		for (const m of matches.reverse()) {
+			const text = m.node.textContent || "";
+			const before = text.slice(0, m.index);
+			const matched = text.slice(m.index, m.index + highlight.length);
+			const after = text.slice(m.index + highlight.length);
+
+			const mark = document.createElement("mark");
+			mark.className =
+				"bg-yellow-200 dark:bg-yellow-800 text-inherit rounded-sm px-0.5";
+			mark.textContent = matched;
+
+			const parent = m.node.parentNode;
+			if (!parent) continue;
+
+			if (after) parent.insertBefore(document.createTextNode(after), m.node.nextSibling);
+			parent.insertBefore(mark, m.node.nextSibling);
+			if (before) parent.insertBefore(document.createTextNode(before), mark);
+			parent.removeChild(m.node);
+
+			firstMark = mark;
+		}
+
+		// Scroll to first match
+		if (firstMark) {
+			firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+		}
+	});
 
 	if (!data) {
 		return (
@@ -136,6 +193,7 @@ export function MarkdownSection({ data, serviceSlug }: Props) {
 			)}
 
 			<article
+				ref={articleRef}
 				className="prose prose-neutral dark:prose-invert max-w-none"
 				dangerouslySetInnerHTML={{ __html: cleanHtml }}
 			/>
