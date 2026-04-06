@@ -221,7 +221,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	}
 
 	return (
-		<div className="rounded-lg border border-(--border) p-6">
+		<div className="rounded-lg border border-(--border) p-6 min-w-0 overflow-hidden">
 			{config.title && (
 				<h3 className="text-sm font-semibold mb-4">{config.title}</h3>
 			)}
@@ -330,7 +330,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 								placeholder={field.placeholder}
 								value={values[field.key] ?? ""}
 								onChange={(e) => handleChange(field.key, e.target.value)}
-								className="mt-1 block w-full rounded-md border border-(--input) bg-(--background) px-3 py-2 text-sm"
+								className="mt-1 block w-full min-w-0 rounded-md border border-(--input) bg-(--background) px-3 py-2 text-sm"
 							/>
 						)}
 					</div>
