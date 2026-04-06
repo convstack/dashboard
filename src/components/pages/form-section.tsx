@@ -15,6 +15,9 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	const [error, setError] = useState("");
 	const [values, setValues] = useState<Record<string, string>>({});
 	const [prefilled, setPrefilled] = useState(false);
+	const [dynamicFields, setDynamicFields] = useState<
+		FormConfig["fields"] | null
+	>(null);
 	const [secretResponse, setSecretResponse] = useState<{
 		secrets: Record<string, string>;
 		redirect?: string;
@@ -30,32 +33,59 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 
 	// Pre-fill form values from a GET request to the same endpoint
 	// The detail format { fields: [{ key, value }] } is parsed into key-value pairs
+	// If the response fields include type/label, use them as dynamic field definitions
+	const prefillEndpoint = interpolateEndpoint(section.endpoint, pathParams);
+
 	const prefill = useCallback(async () => {
-		if (!config?.fields || !endpoint) return;
+		if (!config?.fields || !prefillEndpoint) return;
 		try {
-			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`);
+			const response = await fetch(
+				`/api/proxy/${serviceSlug}${prefillEndpoint}`,
+			);
 			if (!response.ok) return;
 			const data = await response.json();
 			if (data?.fields && Array.isArray(data.fields)) {
 				const initial: Record<string, string> = {};
+				const dynFields: FormConfig["fields"] = [];
+				let hasDynamicDefs = false;
+
 				for (const field of data.fields) {
 					if (field.key && field.value != null) {
 						initial[field.key] = String(field.value);
 					}
+					// If the endpoint returns field definitions (type, label),
+					// use those instead of the static manifest config
+					if (field.key && field.label && field.type) {
+						hasDynamicDefs = true;
+						dynFields.push({
+							key: field.key,
+							label: field.label,
+							type: field.type,
+							required: field.required,
+							placeholder: field.placeholder,
+							options: field.options,
+						});
+					}
 				}
+
 				setValues(initial);
+				if (hasDynamicDefs) {
+					setDynamicFields(dynFields);
+				}
 			}
 		} catch {
 			// Pre-fill is best-effort
 		}
 		setPrefilled(true);
-	}, [serviceSlug, endpoint, config?.fields]);
+	}, [serviceSlug, prefillEndpoint, config?.fields]);
 
 	useEffect(() => {
 		prefill();
 	}, [prefill]);
 
-	if (!config?.fields) {
+	const activeFields = dynamicFields || config?.fields;
+
+	if (!activeFields) {
 		return (
 			<div className="rounded-lg border border-(--border) p-6">
 				<p className="text-sm text-(--muted-foreground)">
@@ -77,9 +107,10 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 
 		// Build body from current values (pre-filled + user changes)
 		const body: Record<string, string> = {};
-		for (const field of config.fields) {
-			const val = values[field.key]
-				?? (field.type === "select" && field.options?.length
+		for (const field of activeFields) {
+			const val =
+				values[field.key] ??
+				(field.type === "select" && field.options?.length
 					? field.options[0].value
 					: undefined);
 			if (val !== undefined) {
@@ -205,7 +236,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 						Submitted successfully
 					</div>
 				)}
-				{config.fields.map((field) => (
+				{activeFields.map((field) => (
 					<div key={field.key}>
 						<label htmlFor={field.key} className="block text-sm font-medium">
 							{field.label}
