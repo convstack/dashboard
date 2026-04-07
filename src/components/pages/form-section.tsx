@@ -137,6 +137,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 				if (responseData?.clientSecret)
 					secrets.clientSecret = responseData.clientSecret;
 				if (responseData?.clientId) secrets.clientId = responseData.clientId;
+				if (responseData?.secret) secrets.secret = responseData.secret;
 
 				if (Object.keys(secrets).length > 0) {
 					setSecretResponse({
@@ -162,6 +163,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 			apiKey: "API Key",
 			clientId: "Client ID",
 			clientSecret: "Client Secret",
+			secret: "Webhook Secret",
 		};
 		return (
 			<div className="rounded-lg border border-(--border) p-6 space-y-4">
