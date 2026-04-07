@@ -54,12 +54,13 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 						secrets,
 						message: body?.message,
 					});
-				} else if (action.redirect) {
+				} else if (action.redirect || body?.redirect) {
+					const target = action.redirect || body.redirect;
 					router.navigate({
 						to: "/$service/$",
 						params: {
 							service: serviceSlug,
-							_splat: action.redirect.replace(/^\//, ""),
+							_splat: target.replace(/^\//, ""),
 						},
 					});
 				} else {
