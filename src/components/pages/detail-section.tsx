@@ -31,9 +31,9 @@ export function DetailSection({ section, data }: Props) {
 			)}
 			<dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				{data.fields.map((field) => (
-					<div key={field.key}>
+					<div key={field.key} className="min-w-0">
 						<dt className="text-sm text-(--muted-foreground)">{field.label}</dt>
-						<dd className="mt-1 text-sm font-medium">
+						<dd className="mt-1 text-sm font-medium break-all">
 							{typeof field.value === "boolean"
 								? field.value
 									? "Yes"
