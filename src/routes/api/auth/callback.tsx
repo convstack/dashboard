@@ -24,7 +24,9 @@ export const Route = createFileRoute("/api/auth/callback")({
 						);
 					}
 
+					console.log("[auth/callback] Exchanging code for tokens...");
 					const tokens = await exchangeCodeForTokens(code, codeVerifier);
+					console.log("[auth/callback] Tokens result:", tokens ? "success" : "null");
 					if (!tokens) {
 						return new Response(
 							JSON.stringify({
@@ -67,7 +69,8 @@ export const Route = createFileRoute("/api/auth/callback")({
 							"Set-Cookie": cookie,
 						},
 					});
-				} catch {
+				} catch (err) {
+					console.error("[auth/callback] Error:", err);
 					return new Response(
 						JSON.stringify({ error: "Internal server error" }),
 						{

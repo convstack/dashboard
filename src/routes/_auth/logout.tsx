@@ -8,7 +8,7 @@ const getLogoutConfigFn = createServerFn({ method: "GET" }).handler(
 		const dashboardUrl = process.env.DASHBOARD_URL || "http://localhost:4000";
 		const clientId = process.env.DASHBOARD_CLIENT_ID || "dashboard";
 		return {
-			endSessionUrl: `${LANYARD_URL}/api/auth/oauth2/endsession?client_id=${encodeURIComponent(clientId)}&post_logout_redirect_uri=${encodeURIComponent(`${dashboardUrl}/login`)}`,
+			endSessionUrl: `${LANYARD_URL}/api/auth/oauth2/end-session?client_id=${encodeURIComponent(clientId)}&post_logout_redirect_uri=${encodeURIComponent(`${dashboardUrl}/login`)}`,
 		};
 	},
 );

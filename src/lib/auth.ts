@@ -145,7 +145,11 @@ export async function exchangeCodeForTokens(
 		}).toString(),
 	});
 
-	if (!response.ok) return null;
+	if (!response.ok) {
+		const err = await response.text().catch(() => "");
+		console.error(`[auth] exchangeCodeForTokens failed: ${response.status} ${err}`);
+		return null;
+	}
 	return response.json();
 }
 
@@ -165,7 +169,11 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
 		}).toString(),
 	});
 
-	if (!response.ok) return null;
+	if (!response.ok) {
+		const err = await response.text().catch(() => "");
+		console.error(`[auth] Token exchange failed: ${response.status} ${err}`);
+		return null;
+	}
 	return response.json();
 }
 
