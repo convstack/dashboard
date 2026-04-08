@@ -91,6 +91,7 @@ export async function decryptSession(
 export interface SessionData {
 	accessToken: string;
 	refreshToken: string;
+	idToken?: string;
 	expiresAt: number;
 	user: {
 		id: string;
@@ -129,6 +130,7 @@ export async function exchangeCodeForTokens(
 ): Promise<{
 	access_token: string;
 	refresh_token: string;
+	id_token?: string;
 	expires_in: number;
 	token_type: string;
 } | null> {

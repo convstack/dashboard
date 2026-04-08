@@ -5,10 +5,13 @@ import { LANYARD_URL } from "~/lib/lanyard-client";
 
 const getLogoutConfigFn = createServerFn({ method: "GET" }).handler(
 	async () => {
-		const dashboardUrl = process.env.DASHBOARD_URL || "http://localhost:4000";
+		const dashboardUrl =
+			process.env.DASHBOARD_URL || "http://localhost:4000";
 		const clientId = process.env.DASHBOARD_CLIENT_ID || "dashboard";
 		return {
-			endSessionUrl: `${LANYARD_URL}/api/auth/oauth2/end-session?client_id=${encodeURIComponent(clientId)}&post_logout_redirect_uri=${encodeURIComponent(`${dashboardUrl}/login`)}`,
+			lanyardUrl: LANYARD_URL,
+			clientId,
+			dashboardUrl,
 		};
 	},
 );
@@ -19,18 +22,26 @@ export const Route = createFileRoute("/_auth/logout")({
 });
 
 function LogoutPage() {
-	const { endSessionUrl } = Route.useLoaderData();
+	const { lanyardUrl, clientId, dashboardUrl } = Route.useLoaderData();
 
 	useEffect(() => {
 		async function logout() {
-			// 1. Clear Dashboard session cookie
-			await fetch("/api/auth/logout", { method: "POST" });
-			// 2. Redirect to Lanyard's end_session to clear Lanyard session
-			//    This is a top-level navigation so Lanyard's cookies are sent
-			window.location.href = endSessionUrl;
+			// 1. Clear Dashboard session cookie and get the ID token
+			const res = await fetch("/api/auth/logout", { method: "POST" });
+			const data = await res.json().catch(() => ({}));
+
+			// 2. Redirect to Lanyard's end-session with id_token_hint
+			const params = new URLSearchParams({
+				client_id: clientId,
+				post_logout_redirect_uri: `${dashboardUrl}/login`,
+			});
+			if (data.idToken) {
+				params.set("id_token_hint", data.idToken);
+			}
+			window.location.href = `${lanyardUrl}/api/auth/oauth2/end-session?${params.toString()}`;
 		}
 		logout();
-	}, [endSessionUrl]);
+	}, [lanyardUrl, clientId, dashboardUrl]);
 
 	return (
 		<div className="flex min-h-screen items-center justify-center">

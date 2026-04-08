@@ -101,7 +101,10 @@ const TABLE_TEMPLATE = `| Header | Header | Header |
 | Cell   | Cell   | Cell   |
 | Cell   | Cell   | Cell   |`;
 
-function buildActions(serviceSlug: string): FormatAction[] {
+function buildActions(
+	serviceSlug: string,
+	pageSlug: string | undefined,
+): FormatAction[] {
 	return [
 		{
 			icon: <Bold className="h-4 w-4" />,
@@ -173,7 +176,7 @@ function buildActions(serviceSlug: string): FormatAction[] {
 				input.onchange = async () => {
 					const file = input.files?.[0];
 					if (file) {
-						const url = await uploadImage(file, serviceSlug);
+						const url = await uploadImage(file, serviceSlug, pageSlug);
 						if (url) {
 							insertAtCursor(ta, set, `![${file.name}](${url})`);
 						}
@@ -193,14 +196,19 @@ function buildActions(serviceSlug: string): FormatAction[] {
 async function uploadImage(
 	file: File,
 	serviceSlug: string,
+	pageSlug?: string,
 ): Promise<string | null> {
 	const form = new FormData();
 	form.append("file", file);
+	const qs = pageSlug ? `?pageSlug=${encodeURIComponent(pageSlug)}` : "";
 	try {
-		const res = await fetch(`/api/proxy/${serviceSlug}/api/upload/image`, {
-			method: "POST",
-			body: form,
-		});
+		const res = await fetch(
+			`/api/proxy/${serviceSlug}/api/upload/image${qs}`,
+			{
+				method: "POST",
+				body: form,
+			},
+		);
 		const data = await res.json();
 		return data.url || null;
 	} catch {
@@ -231,7 +239,8 @@ export function MarkdownEditorSection({
 	const [uploading, setUploading] = useState(false);
 
 	const endpoint = interpolateEndpoint(section.endpoint, pathParams);
-	const actions = buildActions(serviceSlug);
+	const pageSlug = pathParams.slug;
+	const actions = buildActions(serviceSlug, pageSlug);
 
 	// Pre-fill from GET (for editing existing pages)
 	const prefill = useCallback(async () => {
@@ -267,7 +276,7 @@ export function MarkdownEditorSection({
 			const placeholder = `![Uploading ${file.name}...]()`;
 			insertAtCursor(ta, setContent, placeholder);
 
-			const url = await uploadImage(file, serviceSlug);
+			const url = await uploadImage(file, serviceSlug, pageSlug);
 			setUploading(false);
 
 			if (url) {
@@ -280,7 +289,7 @@ export function MarkdownEditorSection({
 				);
 			}
 		},
-		[serviceSlug],
+		[serviceSlug, pageSlug],
 	);
 
 	const handlePaste = useCallback(

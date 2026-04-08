@@ -16,6 +16,7 @@ import { Route as AuthLogoutRouteImport } from './routes/_auth/logout'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthCallbackRouteImport } from './routes/_auth/callback'
 import { Route as AuthenticatedServiceIndexRouteImport } from './routes/_authenticated/$service/index'
+import { Route as ApiPermissionsSlugRouteImport } from './routes/api/permissions/$slug'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
@@ -58,6 +59,11 @@ const AuthenticatedServiceIndexRoute =
     path: '/$service/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiPermissionsSlugRoute = ApiPermissionsSlugRouteImport.update({
+  id: '/api/permissions/$slug',
+  path: '/api/permissions/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
   id: '/api/auth/refresh',
   path: '/api/auth/refresh',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/permissions/$slug': typeof ApiPermissionsSlugRoute
   '/$service/': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
 }
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/permissions/$slug': typeof ApiPermissionsSlugRoute
   '/$service': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
 }
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/permissions/$slug': typeof ApiPermissionsSlugRoute
   '/_authenticated/$service/': typeof AuthenticatedServiceIndexRoute
   '/api/proxy/$service/$': typeof ApiProxyServiceSplatRoute
 }
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/api/auth/callback'
     | '/api/auth/logout'
     | '/api/auth/refresh'
+    | '/api/permissions/$slug'
     | '/$service/'
     | '/api/proxy/$service/$'
   fileRoutesByTo: FileRoutesByTo
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/api/auth/callback'
     | '/api/auth/logout'
     | '/api/auth/refresh'
+    | '/api/permissions/$slug'
     | '/$service'
     | '/api/proxy/$service/$'
   id:
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/api/auth/callback'
     | '/api/auth/logout'
     | '/api/auth/refresh'
+    | '/api/permissions/$slug'
     | '/_authenticated/$service/'
     | '/api/proxy/$service/$'
   fileRoutesById: FileRoutesById
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiPermissionsSlugRoute: typeof ApiPermissionsSlugRoute
   ApiProxyServiceSplatRoute: typeof ApiProxyServiceSplatRoute
 }
 
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$service/'
       preLoaderRoute: typeof AuthenticatedServiceIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/permissions/$slug': {
+      id: '/api/permissions/$slug'
+      path: '/api/permissions/$slug'
+      fullPath: '/api/permissions/$slug'
+      preLoaderRoute: typeof ApiPermissionsSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/refresh': {
       id: '/api/auth/refresh'
@@ -316,6 +336,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiPermissionsSlugRoute: ApiPermissionsSlugRoute,
   ApiProxyServiceSplatRoute: ApiProxyServiceSplatRoute,
 }
 export const routeTree = rootRouteImport

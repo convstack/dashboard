@@ -255,6 +255,22 @@ export function DynamicSidebar({ session, services }: Props) {
 	const svcManifest = activeServiceWithSidebar?.uiManifest;
 	const svcSidebar = svcManifest?.sidebar;
 
+	// Fetch user's permissions for the active service
+	const [userPermissions, setUserPermissions] = useState<string[]>([]);
+	const activeSlug = activeServiceWithSidebar?.slug;
+	useEffect(() => {
+		if (!activeSlug) return;
+		fetch(`/api/permissions/${activeSlug}`)
+			.then((res) => (res.ok ? res.json() : { permissions: [] }))
+			.then((data) => setUserPermissions(data.permissions ?? []))
+			.catch(() => setUserPermissions([]));
+	}, [activeSlug]);
+
+	const canSee = (item: { requiredPermission?: string }) => {
+		if (!item.requiredPermission) return true;
+		return userPermissions.includes(item.requiredPermission);
+	};
+
 	if (activeServiceWithSidebar && svcManifest && svcSidebar) {
 		const svc = activeServiceWithSidebar;
 		return (
@@ -276,8 +292,8 @@ export function DynamicSidebar({ session, services }: Props) {
 				</div>
 
 				<nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-					{/* Static items at top */}
-					{(svcSidebar.items ?? []).map((item) => (
+					{/* Static items at top — filtered by permission */}
+					{(svcSidebar.items ?? []).filter(canSee).map((item) => (
 						<NavLink
 							key={item.path}
 							to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}
@@ -294,10 +310,10 @@ export function DynamicSidebar({ session, services }: Props) {
 						/>
 					)}
 
-					{/* Footer items at bottom of nav */}
-					{(svcSidebar.footerItems ?? []).length > 0 && (
+					{/* Footer items at bottom of nav — filtered by permission */}
+					{(svcSidebar.footerItems ?? []).filter(canSee).length > 0 && (
 						<div className="pt-3 border-t border-(--border) mt-3">
-							{(svcSidebar.footerItems ?? []).map((item) => (
+							{(svcSidebar.footerItems ?? []).filter(canSee).map((item) => (
 								<NavLink
 									key={item.path}
 									to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}

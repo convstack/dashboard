@@ -91,7 +91,8 @@ export interface FormConfig {
 			| "textarea"
 			| "password"
 			| "file"
-			| "search";
+			| "search"
+			| "checkboxes";
 		required?: boolean;
 		placeholder?: string;
 		options?: Array<{ label: string; value: string }>;

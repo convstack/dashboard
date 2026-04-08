@@ -29,6 +29,35 @@ export async function getCachedCatalog(
 	return services;
 }
 
+// No proxy-side permission cache — Lanyard's resolver handles caching.
+// This ensures permission changes take effect immediately.
+export async function resolvePermissions(
+	accessToken: string,
+	serviceSlug: string,
+): Promise<{
+	permissions: string[];
+	orgRoles: Array<{ orgId: string; slug: string; role: string }>;
+}> {
+	try {
+		const response = await lanyardFetch(
+			`/api/services/${serviceSlug}/permissions`,
+			{ accessToken },
+		);
+
+		if (response.ok) {
+			const data = await response.json();
+			return {
+				permissions: data.permissions || [],
+				orgRoles: data.orgRoles || [],
+			};
+		}
+	} catch {
+		// Permission resolution is best-effort
+	}
+
+	return { permissions: [], orgRoles: [] };
+}
+
 export async function proxyRequest(
 	request: Request,
 	serviceSlug: string,
@@ -61,11 +90,17 @@ export async function proxyRequest(
 		});
 	}
 
-	// 3. Build target URL (preserve query string)
+	// 3. Resolve user permissions for this service
+	const { permissions, orgRoles } = await resolvePermissions(
+		session.accessToken,
+		serviceSlug,
+	);
+
+	// 4. Build target URL (preserve query string)
 	const queryString = new URL(request.url).search;
 	const targetUrl = `${service.baseUrl}/${remainingPath}${queryString}`;
 
-	// 4. Forward request with timeout
+	// 5. Forward request with timeout
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
 
@@ -76,10 +111,11 @@ export async function proxyRequest(
 			proxyHeaders.set("Content-Type", contentType);
 		}
 
-		// Add user context headers for the backend service
+		// User context headers
 		proxyHeaders.set("X-User-Id", session.user.id);
-		proxyHeaders.set("X-User-Role", session.user.role);
 		proxyHeaders.set("X-User-Email", session.user.email);
+		proxyHeaders.set("X-User-Permissions", permissions.join(","));
+		proxyHeaders.set("X-User-Org-Roles", JSON.stringify(orgRoles));
 		proxyHeaders.set(
 			"X-Forwarded-For",
 			request.headers.get("x-forwarded-for") || "",
@@ -98,13 +134,12 @@ export async function proxyRequest(
 
 		clearTimeout(timeout);
 
-		// 5. Return sanitized response
+		// 6. Return sanitized response
 		const responseHeaders = new Headers();
 		const respContentType = response.headers.get("content-type");
 		if (respContentType) {
 			responseHeaders.set("Content-Type", respContentType);
 		}
-		// Strip any internal headers from the backend service
 		responseHeaders.set("X-Content-Type-Options", "nosniff");
 
 		return new Response(response.body, {

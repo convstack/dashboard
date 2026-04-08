@@ -37,7 +37,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	const prefillEndpoint = interpolateEndpoint(section.endpoint, pathParams);
 
 	const prefill = useCallback(async () => {
-		if (!config?.fields || !prefillEndpoint) return;
+		if (!prefillEndpoint) return;
 		try {
 			const response = await fetch(
 				`/api/proxy/${serviceSlug}${prefillEndpoint}`,
@@ -51,7 +51,10 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 
 				for (const field of data.fields) {
 					if (field.key && field.value != null) {
-						initial[field.key] = String(field.value);
+						// Store array values as JSON strings (for checkboxes)
+						initial[field.key] = Array.isArray(field.value)
+							? JSON.stringify(field.value)
+							: String(field.value);
 					}
 					// If the endpoint returns field definitions (type, label),
 					// use those instead of the static manifest config
@@ -77,7 +80,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 			// Pre-fill is best-effort
 		}
 		setPrefilled(true);
-	}, [serviceSlug, prefillEndpoint, config?.fields]);
+	}, [serviceSlug, prefillEndpoint]);
 
 	useEffect(() => {
 		prefill();
@@ -99,6 +102,21 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		setValues((prev) => ({ ...prev, [key]: value }));
 	};
 
+	const handleCheckboxToggle = (key: string, optionValue: string) => {
+		setValues((prev) => {
+			let current: string[] = [];
+			try {
+				current = JSON.parse(prev[key] || "[]");
+			} catch {
+				current = [];
+			}
+			const next = current.includes(optionValue)
+				? current.filter((v) => v !== optionValue)
+				: [...current, optionValue];
+			return { ...prev, [key]: JSON.stringify(next) };
+		});
+	};
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setLoading(true);
@@ -106,14 +124,28 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		setSuccess(false);
 
 		// Build body from current values (pre-filled + user changes)
-		const body: Record<string, string> = {};
+		const body: Record<string, unknown> = {};
 		for (const field of activeFields) {
-			const val =
-				values[field.key] ??
-				(field.type === "select" && field.options?.length
-					? field.options[0].value
-					: undefined);
-			if (val !== undefined) {
+			let val = values[field.key];
+			// Select fields: use first option if value is empty/unset
+			if (
+				(!val || val === "") &&
+				field.type === "select" &&
+				field.options?.length
+			) {
+				val = field.options[0].value;
+			}
+			// Checkboxes: send as array
+			if (field.type === "checkboxes") {
+				try {
+					const arr = JSON.parse(val || "[]");
+					if (arr.length > 0) body[field.key] = arr;
+				} catch {
+					// skip
+				}
+				continue;
+			}
+			if (val !== undefined && val !== "") {
 				body[field.key] = val;
 			}
 		}
@@ -146,7 +178,11 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 						message: responseData?.message,
 					});
 				} else if (responseData?.redirect) {
-					window.location.href = responseData.redirect;
+					// Prefix with service slug if the redirect is service-relative
+					const redir = responseData.redirect as string;
+					window.location.href = redir.startsWith(`/${serviceSlug}`)
+						? redir
+						: `/${serviceSlug}${redir.startsWith("/") ? "" : "/"}${redir}`;
 				} else {
 					setSuccess(true);
 					setTimeout(() => window.location.reload(), 500);
@@ -280,7 +316,34 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 								value={values[field.key] ?? ""}
 								onChange={(v) => handleChange(field.key, v)}
 							/>
-						) : field.type === "file" ? (
+						) : field.type === "checkboxes" ? (
+								<div className="mt-1 space-y-2">
+									{field.options?.map((opt) => {
+										let checked: string[] = [];
+										try {
+											checked = JSON.parse(values[field.key] || "[]");
+										} catch {
+											checked = [];
+										}
+										return (
+											<label
+												key={opt.value}
+												className="flex items-center gap-2 text-sm"
+											>
+												<input
+													type="checkbox"
+													checked={checked.includes(opt.value)}
+													onChange={() =>
+														handleCheckboxToggle(field.key, opt.value)
+													}
+													className="rounded border border-(--input)"
+												/>
+												{opt.label}
+											</label>
+										);
+									})}
+								</div>
+							) : field.type === "file" ? (
 							<div className="mt-1">
 								{values[field.key] && values[field.key].startsWith("http") && (
 									<img

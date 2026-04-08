@@ -20,6 +20,7 @@ interface MarkdownData {
 	actions?: {
 		editLink?: string;
 		historyLink?: string;
+		permissionsLink?: string;
 	};
 	diff?: DiffLine[];
 }
@@ -189,6 +190,23 @@ export function MarkdownSection({ data, serviceSlug }: Props) {
 							className="rounded-md border border-(--border) px-3 py-1.5 text-sm font-medium hover:bg-(--accent)"
 						>
 							History
+						</button>
+					)}
+					{data.actions.permissionsLink && (
+						<button
+							type="button"
+							onClick={() =>
+								router.navigate({
+									to: "/$service/$",
+									params: {
+										service: serviceSlug,
+										_splat: data.actions?.permissionsLink?.replace(/^\//, ""),
+									},
+								})
+							}
+							className="rounded-md border border-(--border) px-3 py-1.5 text-sm font-medium hover:bg-(--accent)"
+						>
+							Permissions
 						</button>
 					)}
 				</div>

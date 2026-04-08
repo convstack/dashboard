@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DynamicPage } from "~/components/pages/dynamic-page";
 import { findPage, interpolateEndpoint } from "~/lib/manifest-routing";
+import { resolvePermissions } from "~/lib/service-proxy";
 import type { AuthenticatedContext } from "~/routes/_authenticated";
 
 export const Route = createFileRoute("/_authenticated/$service/$")({
@@ -14,6 +15,20 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 		if (!match) return null;
 
 		const { page, pathParams } = match;
+
+		// Resolve permissions once for all sections (server-side only — on the
+		// client, the proxy resolves them per-request).
+		const isServer = typeof window === "undefined";
+		let permissions: string[] = [];
+		let orgRoles: Array<{ orgId: string; slug: string; role: string }> = [];
+		if (isServer) {
+			const resolved = await resolvePermissions(
+				ctx.session.accessToken,
+				service.slug,
+			);
+			permissions = resolved.permissions;
+			orgRoles = resolved.orgRoles;
+		}
 
 		// Fetch section data server-side with interpolated endpoints
 		// Skip sections that don't need server-side data (forms, two-factor, passkey-manager)
@@ -32,7 +47,6 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 				}
 				const endpoint = interpolateEndpoint(section.endpoint, pathParams);
 				try {
-					const isServer = typeof window === "undefined";
 					const url = isServer
 						? `${service.baseUrl}${endpoint}`
 						: `/api/proxy/${service.slug}${endpoint}`;
@@ -40,8 +54,9 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 					if (isServer) {
 						headers.Authorization = `Bearer ${ctx.session.accessToken}`;
 						headers["X-User-Id"] = ctx.session.user.id;
-						headers["X-User-Role"] = ctx.session.user.role;
 						headers["X-User-Email"] = ctx.session.user.email;
+						headers["X-User-Permissions"] = permissions.join(",");
+						headers["X-User-Org-Roles"] = JSON.stringify(orgRoles);
 					}
 					const response = await fetch(url, { headers });
 					if (!response.ok) return null;

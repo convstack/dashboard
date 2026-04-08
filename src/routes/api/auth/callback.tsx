@@ -55,6 +55,7 @@ export const Route = createFileRoute("/api/auth/callback")({
 					const session = {
 						accessToken: tokens.access_token,
 						refreshToken: tokens.refresh_token,
+						idToken: tokens.id_token,
 						expiresAt: Math.floor(Date.now() / 1000) + tokens.expires_in,
 						user,
 					};
