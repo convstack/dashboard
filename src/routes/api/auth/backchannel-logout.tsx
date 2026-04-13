@@ -14,16 +14,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/auth/backchannel-logout")({
 	server: {
 		handlers: {
-			POST: async ({ request }: { request: Request }) => {
-				const body = await request.json().catch(() => null);
-				const userId = body?.userId;
-
-				if (userId) {
-					console.log(
-						`[backchannel-logout] Received logout for user ${userId}`,
-					);
-				}
-
+			POST: async () => {
 				return new Response(JSON.stringify({ success: true }), {
 					status: 200,
 					headers: { "Content-Type": "application/json" },

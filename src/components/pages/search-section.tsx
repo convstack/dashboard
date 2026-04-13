@@ -1,8 +1,8 @@
+import type { JsonValue, PageSection } from "@convstack/service-sdk/types";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDateShort } from "~/lib/format";
-import type { JsonValue, PageSection } from "~/lib/types/manifest";
 
 interface SearchResult {
 	title: string;
@@ -159,7 +159,13 @@ export function SearchSection({ section, serviceSlug }: Props) {
 						>
 							<div className="px-4 py-2.5 border-b border-(--border) bg-(--muted)/30">
 								<Link
-									to={`/${serviceSlug}${rowLink.replace(":slug", group.slug)}`}
+									to="/$service/$"
+									params={{
+										service: serviceSlug,
+										_splat: rowLink
+											.replace(":slug", group.slug)
+											.replace(/^\//, ""),
+									}}
 									className="font-medium text-sm hover:underline"
 								>
 									{group.title}
@@ -176,7 +182,7 @@ export function SearchSection({ section, serviceSlug }: Props) {
 									<Link
 										key={`${group.slug}-${match.matchText || i}`}
 										to={buildHref(group.slug)}
-										className="block px-4 py-2 text-sm text-(--muted-foreground) hover:bg-(--accent) transition-colors"
+										className="block px-4 py-2 text-sm text-[var(--fg-muted)] hover:bg-[var(--surface-2)] transition-colors"
 									>
 										<HighlightedText text={match.snippet} query={query} />
 									</Link>

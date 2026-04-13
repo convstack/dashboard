@@ -100,7 +100,7 @@ function LoginPage() {
 					<button
 						type="button"
 						onClick={() => window.location.reload()}
-						className="w-full rounded-md border border-(--border) px-4 py-2.5 text-sm font-medium hover:bg-(--accent)"
+						className="w-full rounded-md border border-(--border) px-4 py-2.5 text-sm font-medium hover:bg-(--surface-2)"
 					>
 						Retry Connection
 					</button>

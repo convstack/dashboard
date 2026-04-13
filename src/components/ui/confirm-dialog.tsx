@@ -39,25 +39,25 @@ export function ConfirmDialog({
 		<dialog
 			ref={dialogRef}
 			onClose={onCancel}
-			className="fixed inset-0 m-auto backdrop:bg-black/50 rounded-lg border border-(--border) bg-(--background) p-6 space-y-4 min-w-[320px] max-w-md shadow-lg"
+			className="fixed inset-0 m-auto backdrop:bg-black/50 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-3)] p-6 space-y-4 min-w-[320px] max-w-md shadow-[var(--shadow-3)]"
 		>
-			<h2 className="text-lg font-semibold text-(--foreground)">{title}</h2>
-			<p className="text-sm text-(--muted-foreground)">{message}</p>
+			<h2 className="text-lg font-semibold text-[var(--fg)]">{title}</h2>
+			<p className="text-sm text-[var(--fg-muted)]">{message}</p>
 			<div className="flex items-center justify-end gap-3 pt-2">
 				<button
 					type="button"
 					onClick={onCancel}
-					className="px-4 py-2 text-sm font-medium rounded-md border border-(--border) text-(--foreground) hover:bg-(--muted) transition-colors"
+					className="px-4 py-2 text-sm font-medium rounded-[var(--radius)] border border-[var(--border)] text-[var(--fg)] hover:bg-[var(--surface-2)] transition-colors"
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onClick={onConfirm}
-					className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+					className={`px-4 py-2 text-sm font-medium rounded-[var(--radius)] transition-colors ${
 						variant === "danger"
-							? "bg-red-600 hover:bg-red-700 text-white"
-							: "bg-(--primary) text-(--primary-foreground) hover:opacity-90"
+							? "bg-[var(--danger)] text-[var(--accent-fg)] hover:opacity-90"
+							: "bg-[var(--accent)] text-[var(--accent-fg)] hover:bg-[var(--accent-hover)]"
 					}`}
 				>
 					{confirmLabel}

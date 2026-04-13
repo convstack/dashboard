@@ -5,8 +5,7 @@ import { LANYARD_URL } from "~/lib/lanyard-client";
 
 const getLogoutConfigFn = createServerFn({ method: "GET" }).handler(
 	async () => {
-		const dashboardUrl =
-			process.env.DASHBOARD_URL || "http://localhost:4000";
+		const dashboardUrl = process.env.DASHBOARD_URL || "http://localhost:4000";
 		const clientId = process.env.DASHBOARD_CLIENT_ID || "dashboard";
 		return {
 			lanyardUrl: LANYARD_URL,

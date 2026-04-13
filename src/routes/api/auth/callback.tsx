@@ -24,9 +24,7 @@ export const Route = createFileRoute("/api/auth/callback")({
 						);
 					}
 
-					console.log("[auth/callback] Exchanging code for tokens...");
 					const tokens = await exchangeCodeForTokens(code, codeVerifier);
-					console.log("[auth/callback] Tokens result:", tokens ? "success" : "null");
 					if (!tokens) {
 						return new Response(
 							JSON.stringify({

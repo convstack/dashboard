@@ -1,4 +1,4 @@
-import type { PageDefinition } from "./types/manifest";
+import type { PageDefinition } from "@convstack/service-sdk/types";
 
 /**
  * Match a URL path against a manifest page path pattern that may contain

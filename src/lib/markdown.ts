@@ -1,4 +1,5 @@
-import { marked } from "marked";
+import { marked, type RendererObject, type Tokens } from "marked";
+import { registerCalloutExtension } from "./markdown-callouts";
 
 function slugify(text: string): string {
 	return text
@@ -7,14 +8,15 @@ function slugify(text: string): string {
 		.replace(/\s+/g, "-");
 }
 
-const renderer: marked.RendererObject = {
-	heading({ text, depth }) {
+const renderer: RendererObject = {
+	heading({ text, depth }: Tokens.Heading) {
 		const id = slugify(text);
 		return `<h${depth} id="${id}">${text}</h${depth}>\n`;
 	},
 };
 
 marked.use({ renderer });
+registerCalloutExtension(marked);
 
 /**
  * Preprocess markdown to fix task list items without trailing text.

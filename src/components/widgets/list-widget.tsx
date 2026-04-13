@@ -1,4 +1,4 @@
-import type { WidgetDefinition } from "~/lib/types/manifest";
+import type { WidgetDefinition } from "@convstack/service-sdk/types";
 
 interface ListData {
 	items: { title: string; subtitle?: string; href?: string }[];

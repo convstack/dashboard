@@ -1,3 +1,5 @@
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
 import {
 	createRootRoute,
 	HeadContent,
@@ -23,7 +25,7 @@ export const Route = createRootRoute({
 		<div className="flex min-h-screen items-center justify-center">
 			<div className="text-center space-y-2">
 				<h1 className="text-2xl font-bold">404</h1>
-				<p className="text-sm text-(--muted-foreground)">Page not found.</p>
+				<p className="text-sm text-(--fg-muted)">Page not found.</p>
 			</div>
 		</div>
 	),
@@ -48,7 +50,7 @@ function RootComponent() {
 					}}
 				/>
 			</head>
-			<body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased">
+			<body className="min-h-screen antialiased">
 				<Outlet />
 				<Scripts />
 			</body>

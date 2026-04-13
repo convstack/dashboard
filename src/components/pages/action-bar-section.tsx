@@ -1,8 +1,8 @@
+import type { PageSection, RowAction } from "@convstack/service-sdk/types";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
-import type { PageSection, RowAction } from "~/lib/types/manifest";
 
 interface Props {
 	section: PageSection;
@@ -129,7 +129,7 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 								<button
 									type="button"
 									onClick={() => navigator.clipboard.writeText(value)}
-									className="shrink-0 rounded-md border border-(--border) px-3 py-2 text-xs hover:bg-(--accent)"
+									className="shrink-0 rounded-md border border-[var(--border)] px-3 py-2 text-xs hover:bg-[var(--surface-2)]"
 								>
 									Copy
 								</button>
@@ -140,7 +140,7 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 				<button
 					type="button"
 					onClick={() => setSecretResponse(null)}
-					className="rounded-md border border-(--border) px-4 py-2 text-sm font-medium hover:bg-(--accent)"
+					className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-2)]"
 				>
 					Done
 				</button>

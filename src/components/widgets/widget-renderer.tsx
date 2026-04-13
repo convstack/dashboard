@@ -1,6 +1,6 @@
+import type { WidgetDefinition } from "@convstack/service-sdk/types";
 import { useEffect, useState } from "react";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
-import type { WidgetDefinition } from "~/lib/types/manifest";
 import { ChartWidget } from "./chart-widget";
 import { ListWidget } from "./list-widget";
 import { ProgressWidget } from "./progress-widget";

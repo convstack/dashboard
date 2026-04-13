@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, LayoutDashboard } from "lucide-react";
+import { ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { SessionData } from "~/lib/auth";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
@@ -8,6 +8,7 @@ import { DynamicIcon } from "./dynamic-icon";
 interface Props {
 	session: SessionData;
 	services: ServiceCatalogEntry[];
+	mode?: "static" | "drawer";
 }
 
 interface TreeNode {
@@ -17,33 +18,43 @@ interface TreeNode {
 }
 
 function HealthDot({ status }: { status: string }) {
-	if (status === "active") {
-		return (
-			<span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Online" />
-		);
-	}
-	if (status === "degraded") {
-		return (
-			<span
-				className="h-1.5 w-1.5 rounded-full bg-yellow-500"
-				title="Degraded"
-			/>
-		);
-	}
-	if (status === "inactive") {
-		return (
-			<span className="h-1.5 w-1.5 rounded-full bg-red-500" title="Offline" />
-		);
-	}
-	if (status === "maintenance") {
-		return (
-			<span
-				className="h-1.5 w-1.5 rounded-full bg-blue-500"
-				title="Maintenance"
-			/>
-		);
-	}
-	return null;
+	const map: Record<string, { color: string; label: string }> = {
+		active: { color: "bg-[var(--success)]", label: "Online" },
+		degraded: { color: "bg-[var(--warning)]", label: "Degraded" },
+		inactive: { color: "bg-[var(--danger)]", label: "Offline" },
+		maintenance: { color: "bg-[var(--info)]", label: "Maintenance" },
+	};
+	const entry = map[status];
+	if (!entry) return null;
+	return (
+		<span
+			className={`h-1.5 w-1.5 rounded-full ${entry.color}`}
+			title={entry.label}
+		/>
+	);
+}
+
+function PrimaryActionButton({
+	serviceSlug,
+	label,
+	icon,
+	link,
+}: {
+	serviceSlug: string;
+	label: string;
+	icon?: string;
+	link: string;
+}) {
+	return (
+		<Link
+			to="/$service/$"
+			params={{ service: serviceSlug, _splat: link.replace(/^\//, "") }}
+			className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-(--radius) bg-(--accent) px-3 py-2 text-sm font-semibold text-(--accent-fg) shadow-(--shadow-1) transition-colors hover:bg-(--accent-hover)"
+		>
+			{icon && <DynamicIcon name={icon} className="h-4 w-4" />}
+			{label}
+		</Link>
+	);
 }
 
 function NavLink({
@@ -59,7 +70,7 @@ function NavLink({
 		<Link
 			to={to}
 			activeOptions={{ exact: true }}
-			className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-(--sidebar-foreground) hover:bg-(--sidebar-accent) hover:text-(--sidebar-accent-foreground) [&.active]:bg-(--sidebar-accent) [&.active]:font-medium [&.active]:text-(--sidebar-accent-foreground)"
+			className="flex items-center gap-2 rounded-(--radius) px-2.5 py-2.5 text-sm text-(--fg-muted) transition-colors hover:bg-(--surface-2) hover:text-(--fg) lg:py-1.5 [&.active]:bg-(--accent-muted) [&.active]:font-medium [&.active]:text-(--fg)"
 		>
 			{icon && <DynamicIcon name={icon} className="h-4 w-4" />}
 			{label}
@@ -82,7 +93,6 @@ function SidebarTreeNode({
 	const isActive = currentPath === pagePath;
 	const hasChildren = node.children.length > 0;
 
-	// Auto-expand if current page is this node or a descendant
 	const isInActiveBranch = isActive || currentPath.startsWith(`${pagePath}/`);
 	const hasActiveDescendant =
 		hasChildren && containsPath(node.children, serviceSlug, currentPath);
@@ -91,7 +101,6 @@ function SidebarTreeNode({
 		isInActiveBranch || hasActiveDescendant,
 	);
 
-	// Re-expand when navigation changes to a descendant
 	useEffect(() => {
 		if (isInActiveBranch || hasActiveDescendant) {
 			setExpanded(true);
@@ -100,18 +109,23 @@ function SidebarTreeNode({
 
 	return (
 		<div>
+			{/* Tree indent: depth × 12px (3 spacing units) */}
 			<div
-				className="flex items-center"
-				style={{ paddingLeft: `${depth * 12}px` }}
+				className="flex items-center ps-[calc(var(--tree-depth)*12px)]"
+				style={{ "--tree-depth": depth } as React.CSSProperties}
 			>
 				{hasChildren ? (
 					<button
 						type="button"
-						onClick={() => setExpanded((prev) => !prev)}
-						className="flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-(--sidebar-accent)"
+						onClick={() => setExpanded((p) => !p)}
+						aria-label={
+							expanded ? `Collapse ${node.title}` : `Expand ${node.title}`
+						}
+						aria-expanded={expanded}
+						className="flex h-9 w-9 shrink-0 items-center justify-center rounded hover:bg-(--surface-2) lg:h-6 lg:w-6"
 					>
 						<ChevronRight
-							className={`h-3.5 w-3.5 text-(--muted-foreground) transition-transform ${expanded ? "rotate-90" : ""}`}
+							className={`h-3.5 w-3.5 text-(--fg-subtle) transition-transform ${expanded ? "rotate-90" : ""}`}
 						/>
 					</button>
 				) : (
@@ -119,7 +133,11 @@ function SidebarTreeNode({
 				)}
 				<Link
 					to={pagePath}
-					className={`flex-1 truncate rounded-md px-1.5 py-1 text-sm hover:bg-(--sidebar-accent) hover:text-(--sidebar-accent-foreground) ${isActive ? "bg-(--sidebar-accent) font-medium text-(--sidebar-accent-foreground)" : "text-(--sidebar-foreground)"}`}
+					className={`flex-1 truncate rounded-sm px-1.5 py-2.5 text-sm transition-colors hover:bg-(--surface-2) hover:text-(--fg) lg:py-1 ${
+						isActive
+							? "bg-(--accent-muted) font-medium text-(--fg)"
+							: "text-(--fg-muted)"
+					}`}
 				>
 					{node.title}
 				</Link>
@@ -148,15 +166,13 @@ function containsPath(
 ): boolean {
 	for (const node of nodes) {
 		const pagePath = `/${serviceSlug}/pages/${node.slug}`;
-		if (currentPath === pagePath || currentPath.startsWith(`${pagePath}/`)) {
+		if (currentPath === pagePath || currentPath.startsWith(`${pagePath}/`))
 			return true;
-		}
 		if (
 			node.children.length > 0 &&
 			containsPath(node.children, serviceSlug, currentPath)
-		) {
+		)
 			return true;
-		}
 	}
 	return false;
 }
@@ -175,11 +191,9 @@ function SidebarTree({
 	const fetchTree = useCallback(async () => {
 		try {
 			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`);
-			if (response.ok) {
-				setTree(await response.json());
-			}
+			if (response.ok) setTree(await response.json());
 		} catch {
-			// Tree is best-effort
+			// best effort
 		}
 		setLoaded(true);
 	}, [serviceSlug, endpoint]);
@@ -192,7 +206,7 @@ function SidebarTree({
 
 	return (
 		<div className="space-y-0.5">
-			<div className="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-(--muted-foreground)">
+			<div className="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-(--fg-subtle)">
 				Pages
 			</div>
 			{tree.map((node) => (
@@ -217,8 +231,8 @@ function UserInfo({ session }: { session: SessionData }) {
 		.slice(0, 2);
 
 	return (
-		<div className="border-t border-(--border) p-3">
-			<div className="flex items-center gap-3 rounded-md px-2 py-2">
+		<div className="border-t border-(--border) p-4">
+			<div className="flex items-center gap-3 rounded-(--radius) px-2 py-2">
 				{session.user.image ? (
 					<img
 						src={session.user.image}
@@ -226,25 +240,33 @@ function UserInfo({ session }: { session: SessionData }) {
 						className="h-8 w-8 rounded-full object-cover"
 					/>
 				) : (
-					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--primary) text-xs font-medium text-(--primary-foreground)">
+					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--accent) text-xs font-medium text-(--accent-fg)">
 						{initials}
 					</div>
 				)}
-				<div className="flex-1 min-w-0">
-					<p className="truncate text-sm font-medium">{session.user.name}</p>
-					<p className="truncate text-xs text-(--muted-foreground)">
+				<div className="min-w-0 flex-1">
+					<p className="truncate text-sm font-medium text-(--fg)">
+						{session.user.name}
+					</p>
+					<p className="truncate text-xs text-(--fg-muted)">
 						{session.user.email}
 					</p>
 				</div>
 			</div>
+			<Link
+				to="/logout"
+				className="mt-1 flex w-full items-center gap-2 rounded-(--radius) px-2 py-2.5 text-left text-sm text-(--fg-muted) hover:bg-(--surface-2) hover:text-(--fg) lg:py-1.5"
+			>
+				<LogOut className="h-4 w-4" />
+				Sign out
+			</Link>
 		</div>
 	);
 }
 
-export function DynamicSidebar({ session, services }: Props) {
+function SidebarContent({ session, services }: Omit<Props, "mode">) {
 	const location = useLocation();
 
-	// Check if we're inside a service that has its own sidebar
 	const activeServiceWithSidebar = services.find(
 		(s) =>
 			s.uiManifest?.sidebar &&
@@ -255,7 +277,6 @@ export function DynamicSidebar({ session, services }: Props) {
 	const svcManifest = activeServiceWithSidebar?.uiManifest;
 	const svcSidebar = svcManifest?.sidebar;
 
-	// Fetch user's permissions for the active service
 	const [userPermissions, setUserPermissions] = useState<string[]>([]);
 	const activeSlug = activeServiceWithSidebar?.slug;
 	useEffect(() => {
@@ -271,38 +292,52 @@ export function DynamicSidebar({ session, services }: Props) {
 		return userPermissions.includes(item.requiredPermission);
 	};
 
+	// Role-based visibility: coordinator = any admin/owner org role; convention-admin = global admin.
+	const isCoordinator =
+		session.user.orgRoles?.some(
+			(r) => r.role === "admin" || r.role === "owner",
+		) ?? false;
+	const isConventionAdmin = session.user.role === "admin";
+
+	const itemVisible = (item: {
+		showWhen?: "coordinator" | "convention-admin";
+	}): boolean => {
+		if (!item.showWhen) return true;
+		if (item.showWhen === "coordinator") return isCoordinator;
+		if (item.showWhen === "convention-admin") return isConventionAdmin;
+		return true;
+	};
+
 	if (activeServiceWithSidebar && svcManifest && svcSidebar) {
 		const svc = activeServiceWithSidebar;
 		return (
-			<aside className="w-64 border-r border-(--border) bg-(--sidebar-background) flex flex-col">
-				<div className="p-5">
-					<Link
-						to="/home"
-						className="flex items-center gap-2 text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors"
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Back to Dashboard
-					</Link>
-					<div className="mt-3 flex items-center gap-2">
-						<DynamicIcon name={svcManifest.icon ?? "box"} className="h-5 w-5" />
-						<span className="text-lg font-bold tracking-tight">
-							{svcManifest.name}
-						</span>
-					</div>
-				</div>
+			<div className="flex h-full flex-col">
+				{/* Service-name header lives in the global TopBar — sidebar leads
+				    directly with the primary action so it stays distraction-free. */}
+				<div className="pt-4" />
 
-				<nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-					{/* Static items at top — filtered by permission */}
-					{(svcSidebar.items ?? []).filter(canSee).map((item) => (
-						<NavLink
-							key={item.path}
-							to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}
-							label={item.label}
-							icon={item.icon}
-						/>
-					))}
+				{svcSidebar.primaryAction && (
+					<PrimaryActionButton
+						serviceSlug={svc.slug}
+						label={svcSidebar.primaryAction.label}
+						icon={svcSidebar.primaryAction.icon}
+						link={svcSidebar.primaryAction.link}
+					/>
+				)}
 
-					{/* Dynamic tree */}
+				<nav className="flex-1 space-y-0.5 overflow-y-auto px-4">
+					{(svcSidebar.items ?? [])
+						.filter(itemVisible)
+						.filter(canSee)
+						.map((item) => (
+							<NavLink
+								key={item.path}
+								to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}
+								label={item.label}
+								icon={item.icon}
+							/>
+						))}
+
 					{svcSidebar.tree && (
 						<SidebarTree
 							serviceSlug={svc.slug}
@@ -310,45 +345,52 @@ export function DynamicSidebar({ session, services }: Props) {
 						/>
 					)}
 
-					{/* Footer items at bottom of nav — filtered by permission */}
-					{(svcSidebar.footerItems ?? []).filter(canSee).length > 0 && (
-						<div className="pt-3 border-t border-(--border) mt-3">
-							{(svcSidebar.footerItems ?? []).filter(canSee).map((item) => (
-								<NavLink
-									key={item.path}
-									to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}
-									label={item.label}
-									icon={item.icon}
-								/>
-							))}
+					{(svcSidebar.footerItems ?? []).filter(itemVisible).filter(canSee)
+						.length > 0 && (
+						<div className="mt-3 border-t border-(--border) pt-3">
+							{(svcSidebar.footerItems ?? [])
+								.filter(itemVisible)
+								.filter(canSee)
+								.map((item) => (
+									<NavLink
+										key={item.path}
+										to={`/${svc.slug}${item.path === "/" ? "" : item.path}`}
+										label={item.label}
+										icon={item.icon}
+									/>
+								))}
 						</div>
 					)}
 				</nav>
 
 				<UserInfo session={session} />
-			</aside>
+			</div>
 		);
 	}
 
+	// Global (non-service) sidebar mode
 	return (
-		<aside className="w-64 border-r border-(--border) bg-(--sidebar-background) flex flex-col">
-			<div className="p-5">
-				<Link to="/home" className="text-lg font-bold tracking-tight">
+		<div className="flex h-full flex-col">
+			<div className="px-4 pt-5 pb-3">
+				<Link
+					to="/home"
+					className="text-base font-semibold tracking-tight text-(--fg)"
+				>
 					Dashboard
 				</Link>
 			</div>
 
-			<nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+			<nav className="flex-1 space-y-0.5 overflow-y-auto px-4">
 				<Link
 					to="/home"
 					activeOptions={{ exact: true }}
-					className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-(--sidebar-foreground) hover:bg-(--sidebar-accent) hover:text-(--sidebar-accent-foreground) [&.active]:bg-(--sidebar-accent) [&.active]:font-medium [&.active]:text-(--sidebar-accent-foreground)"
+					className="flex items-center gap-2 rounded-(--radius) px-2.5 py-2.5 text-sm text-(--fg-muted) transition-colors hover:bg-(--surface-2) hover:text-(--fg) lg:py-1.5 [&.active]:bg-(--accent-muted) [&.active]:font-medium [&.active]:text-(--fg)"
 				>
 					<LayoutDashboard className="h-4 w-4" />
 					Home
 				</Link>
 
-				{/* Inline services (like Departments) — rendered as simple nav links under Home */}
+				{/* Inline services (like Departments) */}
 				{services
 					.filter(
 						(s) =>
@@ -357,17 +399,19 @@ export function DynamicSidebar({ session, services }: Props) {
 							s.slug === "departments",
 					)
 					.flatMap((service) =>
-						(service.uiManifest?.navigation ?? []).map((item) => (
-							<NavLink
-								key={`${service.slug}${item.path}`}
-								to={`/${service.slug}${item.path === "/" ? "" : item.path}`}
-								label={item.label}
-								icon={item.icon}
-							/>
-						)),
+						(service.uiManifest?.navigation ?? [])
+							.filter(itemVisible)
+							.map((item) => (
+								<NavLink
+									key={`${service.slug}${item.path}`}
+									to={`/${service.slug}${item.path === "/" ? "" : item.path}`}
+									label={item.label}
+									icon={item.icon}
+								/>
+							)),
 					)}
 
-				{/* Dynamic service sections — user services first, then admin */}
+				{/* Dynamic service sections */}
 				{services
 					.filter(
 						(s) =>
@@ -382,7 +426,7 @@ export function DynamicSidebar({ session, services }: Props) {
 					})
 					.map((service) => (
 						<div key={service.id}>
-							<div className="flex items-center gap-1.5 px-2 pt-4 pb-1.5 text-xs font-semibold uppercase tracking-wider text-(--muted-foreground)">
+							<div className="flex items-center gap-1.5 px-2 pt-4 pb-1.5 text-xs font-semibold uppercase tracking-wider text-(--fg-subtle)">
 								<DynamicIcon
 									name={service.uiManifest?.icon ?? "box"}
 									className="h-3.5 w-3.5"
@@ -390,12 +434,12 @@ export function DynamicSidebar({ session, services }: Props) {
 								{service.uiManifest?.name}
 								<HealthDot status={service.status} />
 							</div>
-							{service.uiManifest?.navigation.map((item) =>
+							{service.uiManifest?.navigation.filter(itemVisible).map((item) =>
 								item.href ? (
 									<a
 										key={item.path}
 										href={item.href}
-										className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-(--sidebar-foreground) hover:bg-(--sidebar-accent) hover:text-(--sidebar-accent-foreground)"
+										className="flex items-center gap-2 rounded-(--radius) px-2.5 py-2.5 text-sm text-(--fg-muted) hover:bg-(--surface-2) hover:text-(--fg) lg:py-1.5"
 									>
 										<DynamicIcon name={item.icon} className="h-4 w-4" />
 										{item.label}
@@ -413,38 +457,20 @@ export function DynamicSidebar({ session, services }: Props) {
 					))}
 			</nav>
 
-			<div className="border-t border-(--border) p-3">
-				<div className="flex items-center gap-3 rounded-md px-2 py-2">
-					{session.user.image ? (
-						<img
-							src={session.user.image}
-							alt=""
-							className="h-8 w-8 rounded-full object-cover"
-						/>
-					) : (
-						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--primary) text-xs font-medium text-(--primary-foreground)">
-							{(session.user.name || session.user.email || "?")
-								.split(" ")
-								.map((w) => w[0])
-								.join("")
-								.toUpperCase()
-								.slice(0, 2)}
-						</div>
-					)}
-					<div className="flex-1 min-w-0">
-						<p className="truncate text-sm font-medium">{session.user.name}</p>
-						<p className="truncate text-xs text-(--muted-foreground)">
-							{session.user.email}
-						</p>
-					</div>
-				</div>
-				<Link
-					to="/logout"
-					className="mt-1 block w-full rounded-md px-2 py-1.5 text-left text-sm text-(--muted-foreground) hover:bg-(--accent) hover:text-(--foreground)"
-				>
-					Sign out
-				</Link>
-			</div>
+			<UserInfo session={session} />
+		</div>
+	);
+}
+
+export function DynamicSidebar({ session, services, mode = "static" }: Props) {
+	if (mode === "drawer") {
+		// Drawer wraps this content in its own <aside>; return the raw content.
+		return <SidebarContent session={session} services={services} />;
+	}
+
+	return (
+		<aside className="flex w-[260px] flex-col border-r border-[var(--border)] bg-[var(--surface-1)]">
+			<SidebarContent session={session} services={services} />
 		</aside>
 	);
 }

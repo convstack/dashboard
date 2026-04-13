@@ -1,4 +1,4 @@
-import type { WidgetDefinition } from "~/lib/types/manifest";
+import type { WidgetDefinition } from "@convstack/service-sdk/types";
 
 interface ChartData {
 	labels: string[];

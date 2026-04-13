@@ -118,7 +118,7 @@ export function SearchField({
 							<button
 								type="button"
 								onClick={() => handleSelect(r)}
-								className="w-full px-3 py-2 text-left text-sm hover:bg-(--accent) transition-colors"
+								className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-2)] transition-colors"
 							>
 								{r.label}
 							</button>

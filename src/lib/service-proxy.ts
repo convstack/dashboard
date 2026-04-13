@@ -113,7 +113,9 @@ export async function proxyRequest(
 
 		// User context headers
 		proxyHeaders.set("X-User-Id", session.user.id);
+		proxyHeaders.set("X-User-Name", session.user.name);
 		proxyHeaders.set("X-User-Email", session.user.email);
+		proxyHeaders.set("X-User-Role", session.user.role);
 		proxyHeaders.set("X-User-Permissions", permissions.join(","));
 		proxyHeaders.set("X-User-Org-Roles", JSON.stringify(orgRoles));
 		proxyHeaders.set(

@@ -1,74 +1,219 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@layer base {
-	:root {
-		--background: oklch(1 0 0);
-		--foreground: oklch(0.145 0 0);
-		--card: oklch(1 0 0);
-		--card-foreground: oklch(0.145 0 0);
-		--popover: oklch(1 0 0);
-		--popover-foreground: oklch(0.145 0 0);
-		--primary: oklch(0.205 0.064 285.885);
-		--primary-foreground: oklch(0.985 0 0);
-		--secondary: oklch(0.97 0 0);
-		--secondary-foreground: oklch(0.205 0 0);
-		--muted: oklch(0.97 0 0);
-		--muted-foreground: oklch(0.556 0 0);
-		--accent: oklch(0.97 0 0);
-		--accent-foreground: oklch(0.205 0 0);
-		--destructive: oklch(0.577 0.245 27.325);
-		--destructive-foreground: oklch(0.577 0.245 27.325);
-		--border: oklch(0.922 0 0);
-		--input: oklch(0.922 0 0);
-		--ring: oklch(0.708 0.165 254.624);
-		--radius: 0.625rem;
-		--sidebar-background: oklch(0.985 0 0);
-		--sidebar-foreground: oklch(0.445 0 0);
-		--sidebar-primary: oklch(0.205 0.064 285.885);
-		--sidebar-primary-foreground: oklch(0.985 0 0);
-		--sidebar-accent: oklch(0.97 0 0);
-		--sidebar-accent-foreground: oklch(0.205 0 0);
-		--sidebar-border: oklch(0.922 0 0);
-		--sidebar-ring: oklch(0.708 0.165 254.624);
-	}
+@theme {
+	--color-bg: #0b0d14;
+	--color-surface-1: #0f1218;
+	--color-surface-2: #151924;
+	--color-surface-3: #1c2130;
+	--color-border: #1c2130;
+	--color-border-strong: #2a3148;
+	--color-fg: #e6e8ef;
+	--color-fg-muted: #8a93a8;
+	--color-fg-subtle: #5a6178;
+	--color-accent: #4f7bff;
+	--color-accent-hover: #6b8fff;
+	--color-accent-muted: #1a2235;
+	--color-accent-fg: #ffffff;
+	--color-success: #22c55e;
+	--color-success-muted: #0f2a1a;
+	--color-warning: #f59e0b;
+	--color-warning-muted: #2a1f0a;
+	--color-danger: #ef4444;
+	--color-danger-muted: #2a1212;
+	--color-info: #06b6d4;
+	--color-info-muted: #0a2028;
 
-	.dark {
-		--background: oklch(0.145 0 0);
-		--foreground: oklch(0.985 0 0);
-		--card: oklch(0.145 0 0);
-		--card-foreground: oklch(0.985 0 0);
-		--popover: oklch(0.145 0 0);
-		--popover-foreground: oklch(0.985 0 0);
-		--primary: oklch(0.922 0 0);
-		--primary-foreground: oklch(0.205 0.064 285.885);
-		--secondary: oklch(0.269 0 0);
-		--secondary-foreground: oklch(0.985 0 0);
-		--muted: oklch(0.269 0 0);
-		--muted-foreground: oklch(0.708 0 0);
-		--accent: oklch(0.269 0 0);
-		--accent-foreground: oklch(0.985 0 0);
-		--destructive: oklch(0.704 0.191 22.216);
-		--destructive-foreground: oklch(0.704 0.191 22.216);
-		--border: oklch(0.269 0 0);
-		--input: oklch(0.269 0 0);
-		--ring: oklch(0.551 0.215 264.364);
-		--sidebar-background: oklch(0.205 0 0);
-		--sidebar-foreground: oklch(0.708 0 0);
-		--sidebar-primary: oklch(0.488 0.243 264.376);
-		--sidebar-primary-foreground: oklch(0.985 0 0);
-		--sidebar-accent: oklch(0.269 0 0);
-		--sidebar-accent-foreground: oklch(0.708 0 0);
-		--sidebar-border: oklch(0.269 0 0);
-		--sidebar-ring: oklch(0.551 0.215 264.364);
-	}
+	--font-sans:
+		"Inter Variable", -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+		sans-serif;
+	--font-mono:
+		"JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas,
+		monospace;
+
+	--text-xs: 12px;
+	--text-sm: 14px;
+	--text-base: 15px;
+	--text-lg: 18px;
+	--text-xl: 22px;
+	--text-2xl: 28px;
+	--text-3xl: 36px;
+
+	--radius-sm: 4px;
+	--radius: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+
+	--shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+	--shadow-3:
+		0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+	--ease: cubic-bezier(0.2, 0.9, 0.25, 1);
+	--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--duration-fast: 120ms;
+	--duration: 200ms;
+	--duration-slow: 320ms;
 }
 
 @layer base {
-	* {
-		@apply border-[var(--border)];
+	/* Theme convention: dark is the default in :root; light overrides via :root:not(.dark) when the .dark class is absent on <html>. The existing theme toggle in __root.tsx adds .dark for dark mode, so toggling it off applies the light overrides. */
+	:root {
+		/* Dark palette is the default — matches the @theme values above */
+		--bg: #0b0d14;
+		--surface-1: #0f1218;
+		--surface-2: #151924;
+		--surface-3: #1c2130;
+		--border: #1c2130;
+		--border-strong: #2a3148;
+		--fg: #e6e8ef;
+		--fg-muted: #8a93a8;
+		--fg-subtle: #5a6178;
+		--accent: #4f7bff;
+		--accent-hover: #6b8fff;
+		--accent-muted: #1a2235;
+		/* --accent-fg auto-picks black or white based on the OKLCH lightness
+		   of --accent, so a per-service accent like amber (#f59e0b, l≈0.74)
+		   gets black text instead of white-on-amber failing WCAG AA. The
+		   clamp trick: when l > 0.62 the inner expression is negative and
+		   clamps to 0 (black); when l ≤ 0.62 it clamps to 1 (white). */
+		--accent-fg: oklch(from var(--accent) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+		--accent-glow: rgba(79, 123, 255, 0.24);
+		--success: #22c55e;
+		--success-muted: #0f2a1a;
+		--warning: #f59e0b;
+		--warning-muted: #2a1f0a;
+		--danger: #ef4444;
+		--danger-muted: #2a1212;
+		--info: #06b6d4;
+		--info-muted: #0a2028;
+		--focus-ring: var(--accent);
+
+		--sidebar-background: var(--surface-1);
+		--sidebar-foreground: var(--fg-muted);
+		--sidebar-accent: var(--surface-2);
+		--sidebar-accent-foreground: var(--fg);
+		--sidebar-border: var(--border);
+
+		/* Backwards-compat aliases — legacy callers reference these names.
+		   New code should use the canonical names above (--bg, --fg, --accent, etc.). */
+		--background: var(--bg);
+		--foreground: var(--fg);
+		--card: var(--surface-1);
+		--card-foreground: var(--fg);
+		--popover: var(--surface-3);
+		--popover-foreground: var(--fg);
+		--primary: var(--accent);
+		--primary-foreground: var(--accent-fg);
+		--secondary: var(--surface-2);
+		--secondary-foreground: var(--fg);
+		--muted: var(--surface-2);
+		--muted-foreground: var(--fg-muted);
+		--accent-foreground: var(--fg);
+		--destructive: var(--danger);
+		--destructive-foreground: var(--accent-fg);
+		--input: var(--border);
+		--ring: var(--focus-ring);
+
+		color-scheme: dark;
 	}
+
+	:root:not(.dark) {
+		/* Light palette — tuned for parity, not pixel-perfection in this spec */
+		--bg: #fafbfc;
+		--surface-1: #ffffff;
+		--surface-2: #f4f6f9;
+		--surface-3: #fcfdfe;
+		--border: #e4e8ef;
+		--border-strong: #c5cbd6;
+		--fg: #111827;
+		--fg-muted: #4b5563;
+		--fg-subtle: #9ca3af;
+		--accent: #4f7bff;
+		--accent-hover: #3a63e0;
+		--accent-muted: #eaf0ff;
+		/* See dark-mode block above for the rationale on auto-deriving fg. */
+		--accent-fg: oklch(from var(--accent) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+		--accent-glow: rgba(79, 123, 255, 0.16);
+		--success: #16a34a;
+		--success-muted: #dcfce7;
+		--warning: #d97706;
+		--warning-muted: #fef3c7;
+		--danger: #dc2626;
+		--danger-muted: #fee2e2;
+		--info: #0891b2;
+		--info-muted: #cffafe;
+		--focus-ring: var(--accent);
+
+		--sidebar-background: var(--surface-1);
+		--sidebar-foreground: var(--fg-muted);
+		--sidebar-accent: var(--surface-2);
+		--sidebar-accent-foreground: var(--fg);
+		--sidebar-border: var(--border);
+
+		/* Backwards-compat aliases — see comment in dark block above. */
+		--background: var(--bg);
+		--foreground: var(--fg);
+		--card: var(--surface-1);
+		--card-foreground: var(--fg);
+		--popover: var(--surface-3);
+		--popover-foreground: var(--fg);
+		--primary: var(--accent);
+		--primary-foreground: var(--accent-fg);
+		--secondary: var(--surface-2);
+		--secondary-foreground: var(--fg);
+		--muted: var(--surface-2);
+		--muted-foreground: var(--fg-muted);
+		--accent-foreground: var(--fg);
+		--destructive: var(--danger);
+		--destructive-foreground: var(--accent-fg);
+		--input: var(--border);
+		--ring: var(--focus-ring);
+
+		color-scheme: light;
+	}
+
+	* {
+		border-color: var(--border);
+	}
+
 	body {
-		@apply bg-[var(--background)] text-[var(--foreground)];
+		background-color: var(--bg);
+		color: var(--fg);
+		font-family: var(--font-sans);
+		font-size: var(--text-base);
+		line-height: 1.6;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	code,
+	pre,
+	kbd,
+	samp {
+		font-family: var(--font-mono);
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		line-height: 1.25;
+	}
+
+	*:focus-visible {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 2px;
+		border-radius: var(--radius-sm);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:root {
+			--duration-fast: 0ms;
+			--duration: 0ms;
+			--duration-slow: 0ms;
+		}
 	}
 }

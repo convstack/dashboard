@@ -1,4 +1,4 @@
-import type { UIManifest } from "./manifest";
+import type { UIManifest } from "@convstack/service-sdk/types";
 
 export interface ServiceCatalogEntry {
 	id: string;

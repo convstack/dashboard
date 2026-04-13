@@ -99,6 +99,7 @@ export interface SessionData {
 		email: string;
 		image?: string;
 		role: string;
+		orgRoles?: { role: string }[];
 		deletionPending?: boolean;
 	};
 }
@@ -149,7 +150,9 @@ export async function exchangeCodeForTokens(
 
 	if (!response.ok) {
 		const err = await response.text().catch(() => "");
-		console.error(`[auth] exchangeCodeForTokens failed: ${response.status} ${err}`);
+		console.error(
+			`[auth] exchangeCodeForTokens failed: ${response.status} ${err}`,
+		);
 		return null;
 	}
 	return response.json();
@@ -192,6 +195,12 @@ export async function fetchUserInfo(
 	const data = await response.json();
 	if (!data?.sub) return null;
 
+	// Fetch the user's department memberships in parallel with the base
+	// userinfo. Populates `orgRoles` on the session so the sidebar's
+	// `showWhen: "coordinator"` check can actually see the user's roles.
+	// Without this, every user looks like a non-coordinator.
+	const orgRoles = await fetchUserOrgRoles(accessToken);
+
 	return {
 		id: data.sub,
 		name: data.name ?? "",
@@ -199,7 +208,27 @@ export async function fetchUserInfo(
 		image: data.picture && data.picture !== "—" ? data.picture : undefined,
 		role: data.role ?? "user",
 		deletionPending: data.deletionPending ?? false,
+		orgRoles,
 	};
+}
+
+async function fetchUserOrgRoles(
+	accessToken: string,
+): Promise<{ role: string }[]> {
+	try {
+		const res = await fetch(`${LANYARD_URL}/api/user/organizations`, {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		});
+		if (!res.ok) return [];
+		const data = (await res.json()) as {
+			rows?: Array<{ role?: string }>;
+		};
+		return (data.rows ?? [])
+			.filter((r) => typeof r.role === "string")
+			.map((r) => ({ role: r.role as string }));
+	} catch {
+		return [];
+	}
 }
 
 export function createSessionCookie(value: string, maxAge = 86400): string {

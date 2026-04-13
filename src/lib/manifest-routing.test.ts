@@ -1,6 +1,6 @@
+import type { PageDefinition } from "@convstack/service-sdk/types";
 import { describe, expect, it } from "vitest";
 import { findPage, interpolateEndpoint, matchPath } from "./manifest-routing";
-import type { PageDefinition } from "./types/manifest";
 
 // ---------------------------------------------------------------------------
 // matchPath

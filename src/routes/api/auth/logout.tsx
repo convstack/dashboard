@@ -17,16 +17,13 @@ export const Route = createFileRoute("/api/auth/logout")({
 					idToken = session?.idToken;
 				}
 
-				return new Response(
-					JSON.stringify({ success: true, idToken }),
-					{
-						status: 200,
-						headers: {
-							"Content-Type": "application/json",
-							"Set-Cookie": clearSessionCookie(),
-						},
+				return new Response(JSON.stringify({ success: true, idToken }), {
+					status: 200,
+					headers: {
+						"Content-Type": "application/json",
+						"Set-Cookie": clearSessionCookie(),
 					},
-				);
+				});
 			},
 		},
 	},

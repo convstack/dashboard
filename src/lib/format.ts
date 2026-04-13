@@ -1,3 +1,5 @@
+import type { BadgeValue, DataTableColumn } from "@convstack/service-sdk/types";
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 /**
@@ -40,4 +42,57 @@ export function formatDateShort(date: string | Date): string {
 		day: "numeric",
 		year: "numeric",
 	});
+}
+
+/**
+ * Format a raw cell value according to the column's declared type.
+ * Returns a string for primitive types; returns a structured object for
+ * `badge`, `avatar`, and `link` that the renderer handles specially.
+ */
+export function formatCellByType(
+	value: unknown,
+	column: DataTableColumn,
+):
+	| string
+	| BadgeValue
+	| { name: string; avatar?: string }
+	| { label: string; url: string }
+	| null {
+	if (value == null) return "";
+	const type = column.type ?? "string";
+	switch (type) {
+		case "number":
+			return typeof value === "number"
+				? new Intl.NumberFormat().format(value)
+				: String(value);
+		case "date":
+			return formatDate(String(value));
+		case "currency": {
+			const num = typeof value === "number" ? value : Number(value);
+			if (Number.isNaN(num)) return String(value);
+			return new Intl.NumberFormat(undefined, {
+				style: "currency",
+				currency: column.currency ?? "USD",
+			}).format(num);
+		}
+		case "badge":
+			if (typeof value === "object" && value !== null && "label" in value) {
+				return value as BadgeValue;
+			}
+			return { label: String(value) };
+		case "avatar":
+			if (typeof value === "object" && value !== null && "name" in value) {
+				return value as { name: string; avatar?: string };
+			}
+			return { name: String(value) };
+		case "link":
+			if (typeof value === "object" && value !== null && "url" in value) {
+				return value as { label: string; url: string };
+			}
+			return { label: String(value), url: String(value) };
+		case "code":
+			return String(value);
+		default:
+			return String(value);
+	}
 }

@@ -1,3 +1,4 @@
+import type { PageSection } from "@convstack/service-sdk/types";
 import DOMPurify from "isomorphic-dompurify";
 import {
 	Bold,
@@ -18,7 +19,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
 import { marked, preprocessMarkdown } from "~/lib/markdown";
-import type { PageSection } from "~/lib/types/manifest";
 
 interface MarkdownEditorConfig {
 	contentField?: string;
@@ -202,13 +202,10 @@ async function uploadImage(
 	form.append("file", file);
 	const qs = pageSlug ? `?pageSlug=${encodeURIComponent(pageSlug)}` : "";
 	try {
-		const res = await fetch(
-			`/api/proxy/${serviceSlug}/api/upload/image${qs}`,
-			{
-				method: "POST",
-				body: form,
-			},
-		);
+		const res = await fetch(`/api/proxy/${serviceSlug}/api/upload/image${qs}`, {
+			method: "POST",
+			body: form,
+		});
 		const data = await res.json();
 		return data.url || null;
 	} catch {
@@ -421,7 +418,6 @@ export function MarkdownEditorSection({
 			{showPreview ? (
 				<article
 					className="prose prose-neutral dark:prose-invert max-w-none min-h-75 rounded-lg border border-(--border) p-6"
-					// biome-ignore lint/security/noDangerouslySetInnerHtml: needed for markdown preview
 					dangerouslySetInnerHTML={{ __html: previewHtml }}
 				/>
 			) : (
@@ -437,7 +433,7 @@ export function MarkdownEditorSection({
 									const ta = textareaRef.current;
 									if (ta) action.action(ta, setContent);
 								}}
-								className="rounded p-1.5 text-(--muted-foreground) hover:bg-(--accent) hover:text-(--foreground) transition-colors"
+								className="rounded p-1.5 text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)] transition-colors"
 							>
 								{action.icon}
 							</button>
