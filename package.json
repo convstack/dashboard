@@ -17,7 +17,7 @@
 	"dependencies": {
 		"@fontsource-variable/inter": "^5.2.8",
 		"@fontsource-variable/jetbrains-mono": "^5.2.8",
-		"@convstack/service-sdk": "^0.1.0",
+		"@convstack/service-sdk": "^0.2.0",
 		"@simplewebauthn/browser": "^13.3.0",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tanstack/react-router": "^1.168.2",
