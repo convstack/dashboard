@@ -1,18 +1,22 @@
 import type { PageSection, TabsConfig } from "@convstack/service-sdk/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { DynamicPage } from "~/components/pages/dynamic-page";
-import { findPage, interpolateEndpoint } from "~/lib/manifest-routing";
-import { resolvePermissions } from "~/lib/service-proxy";
+import {
+	findPage,
+	interpolateEndpoint,
+	sectionUrl,
+} from "~/lib/manifest-routing";
+import { proxyPath } from "~/lib/proxy-path";
+import { serverServiceTarget } from "~/lib/server-target";
+import { lanyardPathAllowed } from "~/lib/service-proxy";
 import type { AuthenticatedContext } from "~/routes/_authenticated";
 
 interface FetchContext {
-	isServer: boolean;
 	serviceSlug: string;
-	serviceBaseUrl: string;
+	lanyardOwned: boolean;
 	pathParams: Record<string, string>;
-	session: AuthenticatedContext["session"];
-	permissions: string[];
-	orgRoles: Array<{ orgId: string; slug: string; role: string }>;
+	// server only; on the client the proxy picks the target
+	target: { baseUrl: string; authorization: string | null } | null;
 }
 
 async function fetchOneSection(
@@ -23,8 +27,6 @@ async function fetchOneSection(
 	if (
 		!section.endpoint ||
 		section.type === "form" ||
-		section.type === "two-factor" ||
-		section.type === "passkey-manager" ||
 		section.type === "markdown-editor" ||
 		section.type === "widget-grid" ||
 		section.type === "search" ||
@@ -36,29 +38,35 @@ async function fetchOneSection(
 	}
 	const endpoint = interpolateEndpoint(section.endpoint, ctx.pathParams);
 	try {
-		const rawUrl = ctx.isServer
-			? `${ctx.serviceBaseUrl}${endpoint}`
-			: `/api/proxy/${ctx.serviceSlug}${endpoint}`;
-		// Client path is relative; resolve against a dummy origin for URL parsing.
-		const base = ctx.isServer ? undefined : "http://localhost";
-		const url = new URL(rawUrl, base);
+		let url: URL;
+		if (ctx.target) {
+			const checked = sectionUrl(endpoint, ctx.target.baseUrl);
+			if (!checked) return null;
+			if (ctx.lanyardOwned && !lanyardPathAllowed(checked)) return null;
+			url = checked;
+		} else {
+			const path = proxyPath(ctx.serviceSlug, endpoint);
+			if (!path) return null;
+			// Client path is relative; resolve against a dummy origin for URL parsing.
+			url = new URL(path, "http://localhost");
+		}
 		if (windowParams) {
 			url.searchParams.set("from", windowParams.from);
 			url.searchParams.set("to", windowParams.to);
 		}
 		const headers: Record<string, string> = {};
-		if (ctx.isServer) {
-			headers.Authorization = `Bearer ${ctx.session.accessToken}`;
-			headers["X-User-Id"] = ctx.session.user.id;
-			headers["X-User-Email"] = ctx.session.user.email;
-			headers["X-User-Permissions"] = ctx.permissions.join(",");
-			headers["X-User-Org-Roles"] = JSON.stringify(ctx.orgRoles);
+		if (ctx.target) {
+			if (!ctx.target.authorization) return null;
+			headers.Authorization = ctx.target.authorization;
 		}
 		// On the client, reconstruct the relative URL from pathname+search only.
-		const fetchUrl = ctx.isServer
-			? url.toString()
-			: `${url.pathname}${url.search}`;
-		const response = await fetch(fetchUrl, { headers });
+		const fetchUrl = ctx.target ? url.href : `${url.pathname}${url.search}`;
+		const response = await fetch(fetchUrl, {
+			headers,
+			...(ctx.target && ctx.lanyardOwned
+				? { redirect: "manual" as const }
+				: {}),
+		});
 		if (!response.ok) return null;
 		return response.json();
 	} catch {
@@ -87,6 +95,11 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 	loader: async ({ params, context }) => {
 		const ctx = context as unknown as AuthenticatedContext;
 		const service = ctx.services.find((s) => s.slug === params.service);
+		if (!service && ctx.servicesUnavailable) {
+			throw new Error(
+				"Your apps can't be loaded right now. Reload in a moment.",
+			);
+		}
 		if (!service || !service.uiManifest) return null;
 
 		const path = `/${params._splat || ""}`;
@@ -96,25 +109,11 @@ export const Route = createFileRoute("/_authenticated/$service/$")({
 		const { page, pathParams } = match;
 
 		const isServer = typeof window === "undefined";
-		let permissions: string[] = [];
-		let orgRoles: Array<{ orgId: string; slug: string; role: string }> = [];
-		if (isServer) {
-			const resolved = await resolvePermissions(
-				ctx.session.accessToken,
-				service.slug,
-			);
-			permissions = resolved.permissions;
-			orgRoles = resolved.orgRoles;
-		}
-
 		const fetchCtx: FetchContext = {
-			isServer,
 			serviceSlug: service.slug,
-			serviceBaseUrl: service.baseUrl,
+			lanyardOwned: service.lanyardOwned === true,
 			pathParams,
-			session: ctx.session,
-			permissions,
-			orgRoles,
+			target: isServer ? await serverServiceTarget(service) : null,
 		};
 
 		const sectionData = await Promise.all(

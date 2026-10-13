@@ -1,48 +1,41 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	buildAuthorizationUrl,
-	generateCodeChallenge,
-	generateCodeVerifier,
-	generateState,
-} from "~/lib/auth";
 import { LANYARD_URL } from "~/lib/lanyard-client";
-import { ensureDashboardRegistered } from "~/server/functions/auto-register";
+import { LOGIN_ERRORS, type LoginError, loginOutcome } from "~/lib/login-page";
 
-const initiateLoginFn = createServerFn({ method: "GET" }).handler(async () => {
-	try {
-		// Check if Lanyard is reachable
-		const healthCheck = await fetch(`${LANYARD_URL}/api/health`, {
-			signal: AbortSignal.timeout(5000),
-		}).catch(() => null);
-
-		if (!healthCheck || !healthCheck.ok) {
-			return { error: "unreachable" as const };
-		}
-
-		// Ensure dashboard is registered with Lanyard on first use
-		await ensureDashboardRegistered();
-
-		const state = generateState();
-		const codeVerifier = generateCodeVerifier();
-		const codeChallenge = await generateCodeChallenge(codeVerifier);
-		const authUrl = buildAuthorizationUrl(state, codeChallenge);
-
-		return { authUrl, state, codeVerifier };
-	} catch {
-		return { error: "unreachable" as const };
-	}
+const checkLanyardFn = createServerFn({ method: "GET" }).handler(async () => {
+	const healthCheck = await fetch(`${LANYARD_URL}/api/health`, {
+		signal: AbortSignal.timeout(5000),
+	}).catch(() => null);
+	return healthCheck?.ok
+		? { ok: true as const }
+		: { error: "unreachable" as const };
 });
 
 export const Route = createFileRoute("/_auth/login")({
-	loader: async () => {
-		return await initiateLoginFn();
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { error?: LoginError } => ({
+		error:
+			typeof search.error === "string" && search.error in LOGIN_ERRORS
+				? (search.error as LoginError)
+				: undefined,
+	}),
+	loaderDeps: ({ search }) => ({ error: search.error }),
+	loader: async ({ deps }) => {
+		const data = await checkLanyardFn();
+		if (loginOutcome(deps.error, "ok" in data) === "sign-in") {
+			// a route of its own on the server, so it needs a full page load
+			throw redirect({ href: "/api/auth/login", reloadDocument: true });
+		}
+		return data;
 	},
 	component: LoginPage,
 });
 
 function LoginPage() {
 	const data = Route.useLoaderData();
+	const { error } = Route.useSearch();
 
 	if ("error" in data) {
 		return (
@@ -109,30 +102,23 @@ function LoginPage() {
 		);
 	}
 
-	const { authUrl, state, codeVerifier } = data;
-
-	const handleLogin = () => {
-		sessionStorage.setItem("oauth_state", state);
-		sessionStorage.setItem("oauth_code_verifier", codeVerifier);
-		window.location.href = authUrl;
-	};
-
 	return (
-		<div className="flex min-h-screen items-center justify-center">
+		<div className="flex min-h-screen items-center justify-center p-4">
 			<div className="w-full max-w-sm space-y-6 rounded-lg border border-(--border) bg-(--card) p-8 text-center">
 				<div>
-					<h1 className="text-2xl font-bold">Convention Dashboard</h1>
-					<p className="mt-2 text-sm text-(--muted-foreground)">
-						Sign in with your Lanyard account to continue.
-					</p>
+					<h1 className="text-2xl font-bold">Sign-in did not work</h1>
+					{error && (
+						<p role="alert" className="mt-2 text-sm text-(--muted-foreground)">
+							{LOGIN_ERRORS[error]}
+						</p>
+					)}
 				</div>
-				<button
-					type="button"
-					onClick={handleLogin}
-					className="w-full rounded-md bg-(--primary) px-4 py-2.5 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
+				<a
+					href="/api/auth/login"
+					className="block w-full rounded-(--radius) bg-(--accent) px-4 py-3 text-sm font-medium text-(--accent-fg) hover:bg-(--accent-hover) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--focus-ring) focus-visible:ring-offset-2"
 				>
-					Sign in with Lanyard
-				</button>
+					Try again
+				</a>
 			</div>
 		</div>
 	);

@@ -51,6 +51,8 @@ cp .env.example .env
 bun run dev
 ```
 
+Optional Content-Security-Policy settings: `DASHBOARD_CSP_IMG_SRC` and `DASHBOARD_CSP_CONNECT_SRC` take space-separated sources (hosts, schemes or origins) that are added to `img-src` and `connect-src`. Images already allow any `https:` source and fetches only go to the dashboard itself, so you only need these for a module that loads from elsewhere. For file storage over plain http on this machine (local development), add its origin to `DASHBOARD_CSP_IMG_SRC`, for example `http://127.0.0.1:9002`. An invalid value stops startup.
+
 ## Scripts
 
 | Script | Description |
@@ -61,6 +63,12 @@ bun run dev
 | `bun run typecheck` | TypeScript type checking |
 | `bun run lint` | Biome linting |
 | `bun run test` | Run tests |
+
+## Branding
+
+The name, favicon, logo and colours come from lanyard (`GET /api/branding`, set in Lanyard Admin, Branding). The server asks once a minute and drops its copy after any successful change made through a lanyard page, so a save shows on the next page load. Colours override the theme tokens for dark and light separately; a theme left at the default colours changes nothing. The logo sits top left in the sidebar and the mobile menu, and the tab title is the name. An optional second logo for the light theme replaces the main one while the light theme is on (the main one is used when there is none). If lanyard cannot be reached the dashboard shows its default look and tries again within seconds.
+
+The logo and favicon are served from lanyard's file storage. When that is plain http on this machine (local development), add its origin to `DASHBOARD_CSP_IMG_SRC`, for example `http://127.0.0.1:9002`, as for avatars.
 
 ## Manifest System
 

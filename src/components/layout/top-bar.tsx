@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { proxyPath } from "~/lib/proxy-path";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import { useTopBarContext } from "~/lib/use-topbar-context";
 import { DynamicIcon } from "./dynamic-icon";
@@ -45,9 +46,9 @@ export function TopBar({ activeService, onHamburgerClick }: Props) {
 				return;
 			}
 			if (action.endpoint && activeService) {
-				await fetch(`/api/proxy/${activeService.slug}${action.endpoint}`, {
-					method: action.method ?? "POST",
-				});
+				const path = proxyPath(activeService.slug, action.endpoint);
+				if (!path) return;
+				await fetch(path, { method: action.method ?? "POST" });
 				router.invalidate();
 			}
 		},

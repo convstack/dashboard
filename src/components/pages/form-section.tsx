@@ -1,7 +1,12 @@
 import type { FormConfig, PageSection } from "@convstack/service-sdk/types";
 import { useCallback, useEffect, useState } from "react";
+import { SafeImg } from "~/components/ui/safe-img";
 import { SearchField } from "~/components/ui/search-field";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
+import { proxyPath } from "~/lib/proxy-path";
+import { safeRedirect } from "~/lib/safe-url";
+import { safeHex } from "~/lib/theme-preview";
+import { ThemePreview } from "./theme-preview";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ControlledFormSection — renders field grid + submit button with no fetch.
@@ -179,8 +184,9 @@ export function ControlledFormSection({
 	};
 
 	const isLoading = submitting || localLoading;
+	const preview = config.preview;
 
-	return (
+	const formElement = (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			{localError && (
 				<div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
@@ -259,7 +265,7 @@ export function ControlledFormSection({
 					) : field.type === "file" ? (
 						<div className="mt-1">
 							{values[field.key] && values[field.key].startsWith("http") && (
-								<img
+								<SafeImg
 									src={values[field.key]}
 									alt="Preview"
 									className="mb-2 h-16 w-16 rounded-full object-cover"
@@ -276,15 +282,21 @@ export function ControlledFormSection({
 										setLocalError("No upload endpoint configured");
 										return;
 									}
+									const path =
+										serviceSlug && proxyPath(serviceSlug, field.uploadEndpoint);
+									if (!path) {
+										setLocalError("Invalid endpoint");
+										return;
+									}
 									setLocalLoading(true);
 									setLocalError("");
 									const form = new FormData();
 									form.append("file", selectedFile);
 									try {
-										const res = await fetch(
-											`/api/proxy/${serviceSlug}${field.uploadEndpoint}`,
-											{ method: "POST", body: form },
-										);
+										const res = await fetch(path, {
+											method: "POST",
+											body: form,
+										});
 										const data = await res.json();
 										if (data.url) {
 											handleChange(field.key, data.url);
@@ -297,6 +309,26 @@ export function ControlledFormSection({
 									setLocalLoading(false);
 								}}
 								className="block w-full text-sm text-(--muted-foreground) file:mr-4 file:rounded-md file:border-0 file:bg-(--primary) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--primary-foreground) hover:file:opacity-90"
+							/>
+						</div>
+					) : field.type === "color" ? (
+						<div className="mt-1 flex items-center gap-2">
+							<input
+								type="color"
+								aria-label={`${field.label} picker`}
+								value={safeHex(values[field.key] ?? "", "#000000")}
+								onChange={(e) => handleChange(field.key, e.target.value)}
+								className="h-11 w-12 shrink-0 cursor-pointer rounded-md border border-(--input) bg-(--background) p-1 lg:h-9"
+							/>
+							<input
+								id={field.key}
+								name={field.key}
+								type="text"
+								required={field.required}
+								placeholder={field.placeholder ?? "#4f7bff"}
+								value={values[field.key] ?? ""}
+								onChange={(e) => handleChange(field.key, e.target.value)}
+								className="block h-11 w-full min-w-0 rounded-md border border-(--input) bg-(--background) px-3 font-mono text-sm lg:h-auto lg:py-2"
 							/>
 						</div>
 					) : (
@@ -325,6 +357,18 @@ export function ControlledFormSection({
 					: (submitLabel ?? config.submitLabel ?? "Submit")}
 			</button>
 		</form>
+	);
+
+	if (!preview) return formElement;
+	return (
+		<div className="grid gap-6 lg:grid-cols-2">
+			{formElement}
+			<ThemePreview
+				values={values}
+				endpoint={preview.endpoint}
+				serviceSlug={serviceSlug ?? ""}
+			/>
+		</div>
 	);
 }
 
@@ -371,9 +415,9 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	const prefill = useCallback(async () => {
 		if (!prefillEndpoint) return;
 		try {
-			const response = await fetch(
-				`/api/proxy/${serviceSlug}${prefillEndpoint}`,
-			);
+			const path = proxyPath(serviceSlug, prefillEndpoint);
+			if (!path) throw new Error("Invalid endpoint");
+			const response = await fetch(path);
 			if (!response.ok) return;
 			const data = await response.json();
 			if (data?.fields && Array.isArray(data.fields)) {
@@ -426,8 +470,14 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 		setError("");
 		setSuccess(false);
 
+		const path = proxyPath(serviceSlug, endpoint);
+		if (!path) {
+			setError("Invalid endpoint");
+			setLoading(false);
+			return;
+		}
 		try {
-			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`, {
+			const response = await fetch(path, {
 				method: (config.method as string) || "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(body),
@@ -471,6 +521,7 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 	};
 
 	if (secretResponse) {
+		const continueTo = safeRedirect(secretResponse.redirect);
 		const labels: Record<string, string> = {
 			apiKey: "API Key",
 			clientId: "Client ID",
@@ -508,11 +559,11 @@ export function FormSection({ section, serviceSlug, pathParams }: Props) {
 						</div>
 					))}
 				</div>
-				{secretResponse.redirect && (
+				{continueTo && (
 					<button
 						type="button"
 						onClick={() => {
-							window.location.href = secretResponse.redirect ?? "/";
+							window.location.href = continueTo;
 						}}
 						className="rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
 					>

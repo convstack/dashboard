@@ -1,5 +1,6 @@
 // dashboard/src/lib/kanban/use-kanban-drag.ts
 import { useCallback, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 import type { KanbanCard } from "./types";
 
 interface CardDraft {
@@ -77,7 +78,9 @@ export function useKanbanDrag(onError?: (msg: string) => void): UseDragResult {
 				return false;
 			}
 			try {
-				const res = await fetch(`/api/proxy/${serviceSlug}${updateUrl}`, {
+				const path = proxyPath(serviceSlug, updateUrl);
+				if (!path) throw new Error("Invalid endpoint");
+				const res = await fetch(path, {
 					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",
@@ -137,7 +140,9 @@ export function useKanbanDrag(onError?: (msg: string) => void): UseDragResult {
 				return false;
 			}
 			try {
-				const res = await fetch(`/api/proxy/${serviceSlug}${reorderUrl}`, {
+				const path = proxyPath(serviceSlug, reorderUrl);
+				if (!path) throw new Error("Invalid endpoint");
+				const res = await fetch(path, {
 					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",

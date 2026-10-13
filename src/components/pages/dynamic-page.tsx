@@ -3,6 +3,7 @@ import type {
 	TopBarContribution,
 } from "@convstack/service-sdk/types";
 import { useEffect } from "react";
+import { ServiceSlugProvider } from "~/lib/service-slug-context";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import { useTopBarContext } from "~/lib/use-topbar-context";
 import { SectionRenderer } from "./section-renderer";
@@ -68,28 +69,30 @@ export function DynamicPage({
 	const isSplit = page.layout === "split";
 
 	return (
-		<div className={layoutClass}>
-			<div
-				className={
-					isSplit ? "grid grid-cols-1 gap-6 lg:grid-cols-2" : "space-y-6"
-				}
-			>
-				{page.sections.map((section, idx) => {
-					const data = sectionData[idx] ?? null;
-					const key = `${section.type}-${idx}`;
-					return (
-						<SectionRenderer
-							key={key}
-							section={section}
-							data={data}
-							service={service}
-							pathParams={pathParams}
-							pageLayout={page.layout}
-							sectionIndex={idx}
-						/>
-					);
-				})}
+		<ServiceSlugProvider value={service.slug}>
+			<div className={layoutClass}>
+				<div
+					className={
+						isSplit ? "grid grid-cols-1 gap-6 lg:grid-cols-2" : "space-y-6"
+					}
+				>
+					{page.sections.map((section, idx) => {
+						const data = sectionData[idx] ?? null;
+						const key = `${section.type}-${idx}`;
+						return (
+							<SectionRenderer
+								key={key}
+								section={section}
+								data={data}
+								service={service}
+								pathParams={pathParams}
+								pageLayout={page.layout}
+								sectionIndex={idx}
+							/>
+						);
+					})}
+				</div>
 			</div>
-		</div>
+		</ServiceSlugProvider>
 	);
 }

@@ -217,3 +217,16 @@
 		}
 	}
 }
+
+/* the logo for the light theme replaces the main one while the dark class is absent */
+.brand-logo-light {
+	display: none;
+}
+
+:root:not(.dark) .brand-logo-light {
+	display: block;
+}
+
+:root:not(.dark) .brand-logo-dark {
+	display: none;
+}

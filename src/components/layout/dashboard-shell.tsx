@@ -1,6 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
-import type { SessionData } from "~/lib/auth";
+import type { ClientSession } from "~/lib/session-view";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import { TopBarProvider } from "~/lib/use-topbar-context";
 import { DynamicSidebar } from "./dynamic-sidebar";
@@ -8,8 +8,9 @@ import { MobileDrawer } from "./mobile-drawer";
 import { TopBar } from "./top-bar";
 
 interface Props {
-	session: SessionData;
+	session: ClientSession;
 	services: ServiceCatalogEntry[];
+	servicesUnavailable?: boolean;
 	children: ReactNode;
 }
 
@@ -32,7 +33,12 @@ function findActiveService(
 	);
 }
 
-export function DashboardShell({ session, services, children }: Props) {
+export function DashboardShell({
+	session,
+	services,
+	servicesUnavailable = false,
+	children,
+}: Props) {
 	const location = useLocation();
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -92,6 +98,7 @@ export function DashboardShell({ session, services, children }: Props) {
 						<DynamicSidebar
 							session={session}
 							services={services}
+							servicesUnavailable={servicesUnavailable}
 							mode="static"
 						/>
 					</div>
@@ -101,6 +108,7 @@ export function DashboardShell({ session, services, children }: Props) {
 						<DynamicSidebar
 							session={session}
 							services={services}
+							servicesUnavailable={servicesUnavailable}
 							mode="drawer"
 						/>
 					</MobileDrawer>

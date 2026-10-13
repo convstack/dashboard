@@ -1,23 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { verifyLogoutToken } from "~/lib/backchannel-logout";
+import { revokeSession, revokeSubject } from "~/lib/session-revocation";
 
-/**
- * Backchannel logout endpoint — called by Lanyard when a user is banned
- * or their sessions are revoked. Since Dashboard uses stateless encrypted
- * cookies (not a session store), we can't invalidate individual sessions
- * server-side. The user's next request will fail with 401 when the
- * OAuth2 access token is checked against Lanyard (token was revoked).
- *
- * This endpoint exists so Lanyard's propagation doesn't get a 404.
- * In the future, if Dashboard uses a session store, this would
- * delete the user's session record.
- */
+function invalidRequest(): Response {
+	return new Response(JSON.stringify({ error: "invalid_request" }), {
+		status: 400,
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": "no-store",
+		},
+	});
+}
+
+// OIDC Back-Channel Logout: Authentik posts a signed logout token when a
+// user's session ends
 export const Route = createFileRoute("/api/auth/backchannel-logout")({
 	server: {
 		handlers: {
-			POST: async () => {
-				return new Response(JSON.stringify({ success: true }), {
+			POST: async ({ request }: { request: Request }) => {
+				const form = await request.formData().catch(() => null);
+				const token = form?.get("logout_token");
+				if (typeof token !== "string") return invalidRequest();
+
+				const claims = await verifyLogoutToken(token);
+				if (!claims) return invalidRequest();
+
+				// a token without a sid ends every session of its subject
+				if (claims.sid) revokeSession(claims.sid, claims.iat);
+				else revokeSubject(claims.sub, claims.iat);
+				return new Response(null, {
 					status: 200,
-					headers: { "Content-Type": "application/json" },
+					headers: { "Cache-Control": "no-store" },
 				});
 			},
 		},

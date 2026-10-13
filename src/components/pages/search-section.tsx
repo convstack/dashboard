@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDateShort } from "~/lib/format";
+import { proxyPath } from "~/lib/proxy-path";
 
 interface SearchResult {
 	title: string;
@@ -69,9 +70,12 @@ export function SearchSection({ section, serviceSlug }: Props) {
 
 			setLoading(true);
 			try {
-				const response = await fetch(
-					`/api/proxy/${serviceSlug}${section.endpoint}?q=${encodeURIComponent(q.trim())}`,
+				const path = proxyPath(
+					serviceSlug,
+					`${section.endpoint}?q=${encodeURIComponent(q.trim())}`,
 				);
+				if (!path) throw new Error("Invalid endpoint");
+				const response = await fetch(path);
 				if (response.ok) {
 					const data = await response.json();
 					setResults(data.results ?? []);

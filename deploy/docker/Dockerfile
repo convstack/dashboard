@@ -19,6 +19,7 @@ COPY --from=builder --chown=app:app /app/dist ./dist
 COPY --from=builder --chown=app:app /app/package.json ./package.json
 COPY --from=builder --chown=app:app /app/bun.lock* ./
 COPY --from=builder --chown=app:app /app/server.ts ./server.ts
+COPY --from=builder --chown=app:app /app/src/lib/security/csp.ts ./src/lib/security/csp.ts
 RUN bun install --frozen-lockfile --production
 USER app
 EXPOSE 4000

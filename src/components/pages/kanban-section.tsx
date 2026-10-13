@@ -1,5 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SafeImg } from "~/components/ui/safe-img";
+import { dropPosition } from "~/lib/kanban/drop-position";
 import type {
 	KanbanCard,
 	KanbanColumn,
@@ -7,6 +9,7 @@ import type {
 	KanbanData,
 } from "~/lib/kanban/types";
 import { useKanbanDrag } from "~/lib/kanban/use-kanban-drag";
+import { proxyPath } from "~/lib/proxy-path";
 import { EventEditModal } from "./event-edit-modal";
 import { KanbanCardModal } from "./kanban-card-modal";
 import { KanbanShortcutsDialog } from "./kanban-shortcuts-dialog";
@@ -66,7 +69,7 @@ function CardAvatar({ name, avatar }: { name: string; avatar?: string }) {
 
 	if (avatar) {
 		return (
-			<img
+			<SafeImg
 				src={avatar}
 				alt={name}
 				title={name}
@@ -435,14 +438,11 @@ function KanbanBoard({ config, data, serviceSlug }: InnerProps) {
 		if (!drag.draggedCardId) return;
 
 		const colEl = e.currentTarget as HTMLElement;
-		const cardEls = colEl.querySelectorAll("[data-card-id]");
-		let position = 0;
-		for (const el of cardEls) {
-			const rect = el.getBoundingClientRect();
-			if (e.clientY > rect.top + rect.height / 2) {
-				position++;
-			}
-		}
+		const position = dropPosition(
+			colEl.querySelectorAll("[data-card-id]"),
+			e.clientY,
+			drag.draggedCardId,
+		);
 		setDropIndicator({ columnId, position });
 		drag.previewCardMove(columnId, position);
 
@@ -532,18 +532,17 @@ function KanbanBoard({ config, data, serviceSlug }: InnerProps) {
 		if (!card._links?.update || newColumnId === card.columnId) return;
 		const targetCards = columnCards.get(newColumnId) ?? [];
 		try {
-			const res = await fetch(
-				`/api/proxy/${serviceSlug}${card._links.update}`,
-				{
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					credentials: "include",
-					body: JSON.stringify({
-						columnId: newColumnId,
-						position: targetCards.length,
-					}),
-				},
-			);
+			const path = proxyPath(serviceSlug, card._links.update);
+			if (!path) throw new Error("Invalid endpoint");
+			const res = await fetch(path, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({
+					columnId: newColumnId,
+					position: targetCards.length,
+				}),
+			});
 			if (!res.ok) throw new Error(`Move failed (${res.status})`);
 			router.invalidate();
 		} catch (err) {
@@ -795,17 +794,19 @@ function KanbanBoard({ config, data, serviceSlug }: InnerProps) {
 							title="Delete column"
 							onClick={async (e) => {
 								e.stopPropagation();
+								const slug =
+									((boardData as Record<string, unknown>).slug as string) ?? "";
+								const path = proxyPath(
+									serviceSlug,
+									`/api/boards/${slug}/columns/${col.id}`,
+								);
+								if (!path) return;
 								const hasCards = cards.length > 0;
 								const msg = hasCards
 									? `Delete "${col.label}" and its ${cards.length} card(s)?`
 									: `Delete "${col.label}"?`;
 								if (!window.confirm(msg)) return;
-								const slug =
-									((boardData as Record<string, unknown>).slug as string) ?? "";
-								await fetch(
-									`/api/proxy/${serviceSlug}/api/boards/${slug}/columns/${col.id}`,
-									{ method: "DELETE", credentials: "include" },
-								);
+								await fetch(path, { method: "DELETE", credentials: "include" });
 								await router.invalidate();
 							}}
 							className="ml-1 rounded p-0.5 text-(--fg-subtle) opacity-0 transition-opacity hover:text-(--danger) group-hover:opacity-100 focus-visible:opacity-100"
@@ -966,17 +967,17 @@ function KanbanBoard({ config, data, serviceSlug }: InnerProps) {
 						<button
 							type="button"
 							onClick={async () => {
+								const addColumn = boardData._links?.addColumn;
+								const path = addColumn && proxyPath(serviceSlug, addColumn);
+								if (!path) return;
 								const label = window.prompt("Column name:");
 								if (!label?.trim()) return;
-								await fetch(
-									`/api/proxy/${serviceSlug}${boardData._links!.addColumn}`,
-									{
-										method: "POST",
-										headers: { "Content-Type": "application/json" },
-										credentials: "include",
-										body: JSON.stringify({ label: label.trim() }),
-									},
-								);
+								await fetch(path, {
+									method: "POST",
+									headers: { "Content-Type": "application/json" },
+									credentials: "include",
+									body: JSON.stringify({ label: label.trim() }),
+								});
 								router.invalidate();
 							}}
 							className="flex h-10 w-72 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed border-(--border) text-xs text-(--fg-muted) hover:border-(--border-strong) hover:text-(--fg) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--focus-ring)"

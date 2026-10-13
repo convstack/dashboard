@@ -4,6 +4,7 @@ import type {
 } from "@convstack/service-sdk/types";
 import { Link, useRouter } from "@tanstack/react-router";
 import { DynamicIcon } from "~/components/layout/dynamic-icon";
+import { proxyPath } from "~/lib/proxy-path";
 
 interface Props {
 	section?: PageSection;
@@ -45,9 +46,9 @@ export function EmptyStateSection({ section, config, serviceSlug }: Props) {
 			return;
 		}
 		if (action.endpoint && serviceSlug) {
-			await fetch(`/api/proxy/${serviceSlug}${action.endpoint}`, {
-				method: action.method ?? "POST",
-			});
+			const path = proxyPath(serviceSlug, action.endpoint);
+			if (!path) return;
+			await fetch(path, { method: action.method ?? "POST" });
 			router.invalidate();
 		}
 	};

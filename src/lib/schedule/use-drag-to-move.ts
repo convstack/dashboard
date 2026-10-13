@@ -1,5 +1,6 @@
 // dashboard/src/lib/schedule/use-drag-to-move.ts
 import { useCallback, useState } from "react";
+import { proxyPath } from "../proxy-path";
 import type { ScheduleEvent } from "./types";
 
 interface MoveDelta {
@@ -29,6 +30,7 @@ interface UseDragToMoveResult {
 }
 
 export function useDragToMove(
+	serviceSlug: string,
 	onMoved?: (updated: ScheduleEvent) => void,
 	onError?: (err: Error, event: ScheduleEvent) => void,
 ): UseDragToMoveResult {
@@ -72,13 +74,15 @@ export function useDragToMove(
 		async (id: string) => {
 			const draft = drafts.get(id);
 			if (!draft) return;
-			const updateUrl = draft._links?.update;
-			if (!updateUrl) {
+			const updatePath = draft._links?.update
+				? proxyPath(serviceSlug, draft._links.update)
+				: null;
+			if (!updatePath) {
 				cancel(id);
 				return;
 			}
 			try {
-				const res = await fetch(updateUrl, {
+				const res = await fetch(updatePath, {
 					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",
@@ -88,7 +92,8 @@ export function useDragToMove(
 						trackId: draft.trackId,
 					}),
 				});
-				if (!res.ok) throw new Error(`PATCH ${updateUrl} → ${res.status}`);
+				if (!res.ok)
+					throw new Error(`PATCH ${updatePath} failed with ${res.status}`);
 				const updated = (await res.json()) as ScheduleEvent;
 				setDrafts((prev) => {
 					const next = new Map(prev);
@@ -101,7 +106,7 @@ export function useDragToMove(
 				onError?.(err as Error, draft);
 			}
 		},
-		[drafts, cancel, onMoved, onError],
+		[drafts, cancel, onMoved, onError, serviceSlug],
 	);
 
 	return {

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { decryptSession, getSessionCookie } from "~/lib/auth";
+import { readSession } from "~/lib/auth";
 import { lanyardFetch } from "~/lib/lanyard-client";
 
 export const Route = createFileRoute("/api/permissions/$slug")({
@@ -12,15 +12,7 @@ export const Route = createFileRoute("/api/permissions/$slug")({
 				request: Request;
 				params: { slug: string };
 			}) => {
-				const cookie = getSessionCookie(request);
-				if (!cookie) {
-					return new Response(JSON.stringify({ permissions: [] }), {
-						status: 200,
-						headers: { "Content-Type": "application/json" },
-					});
-				}
-
-				const session = await decryptSession(cookie);
+				const session = await readSession(request);
 				if (!session) {
 					return new Response(JSON.stringify({ permissions: [] }), {
 						status: 200,
@@ -28,21 +20,29 @@ export const Route = createFileRoute("/api/permissions/$slug")({
 					});
 				}
 
+				const slug = encodeURIComponent(params.slug);
 				try {
 					const response = await lanyardFetch(
-						`/api/services/${params.slug}/permissions`,
+						`/api/services/${slug}/permissions`,
 						{ accessToken: session.accessToken },
 					);
 
 					if (response.ok) {
-						const data = await response.json();
-						return new Response(JSON.stringify(data), {
+						// page JavaScript gets these two only; the proof is for services
+						const { permissions, orgRoles } = await response.json();
+						return new Response(JSON.stringify({ permissions, orgRoles }), {
 							status: 200,
 							headers: { "Content-Type": "application/json" },
 						});
 					}
-				} catch {
-					// Best effort
+					console.warn(
+						`lanyard /api/services/${slug}/permissions answered ${response.status}`,
+					);
+				} catch (err) {
+					console.warn(
+						`lanyard /api/services/${slug}/permissions failed:`,
+						err instanceof Error ? err.message : err,
+					);
 				}
 
 				return new Response(JSON.stringify({ permissions: [], orgRoles: [] }), {

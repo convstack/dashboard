@@ -1,13 +1,23 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
+import {
+	ChevronRight,
+	LayoutDashboard,
+	LogOut,
+	TriangleAlert,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { SessionData } from "~/lib/auth";
+import { SafeImg } from "~/components/ui/safe-img";
+import { proxyPath } from "~/lib/proxy-path";
+import { isSafeImageSrc } from "~/lib/safe-url";
+import type { ClientSession } from "~/lib/session-view";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
+import { BrandMark } from "./brand-mark";
 import { DynamicIcon } from "./dynamic-icon";
 
 interface Props {
-	session: SessionData;
+	session: ClientSession;
 	services: ServiceCatalogEntry[];
+	servicesUnavailable?: boolean;
 	mode?: "static" | "drawer";
 }
 
@@ -190,7 +200,9 @@ function SidebarTree({
 
 	const fetchTree = useCallback(async () => {
 		try {
-			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`);
+			const path = proxyPath(serviceSlug, endpoint);
+			if (!path) throw new Error("Invalid endpoint");
+			const response = await fetch(path);
 			if (response.ok) setTree(await response.json());
 		} catch {
 			// best effort
@@ -222,7 +234,7 @@ function SidebarTree({
 	);
 }
 
-function UserInfo({ session }: { session: SessionData }) {
+function UserInfo({ session }: { session: ClientSession }) {
 	const initials = (session.user.name || session.user.email || "?")
 		.split(" ")
 		.map((w) => w[0])
@@ -233,8 +245,8 @@ function UserInfo({ session }: { session: SessionData }) {
 	return (
 		<div className="border-t border-(--border) p-4">
 			<div className="flex items-center gap-3 rounded-(--radius) px-2 py-2">
-				{session.user.image ? (
-					<img
+				{session.user.image && isSafeImageSrc(session.user.image, "") ? (
+					<SafeImg
 						src={session.user.image}
 						alt=""
 						className="h-8 w-8 rounded-full object-cover"
@@ -253,18 +265,24 @@ function UserInfo({ session }: { session: SessionData }) {
 					</p>
 				</div>
 			</div>
-			<Link
-				to="/logout"
-				className="mt-1 flex w-full items-center gap-2 rounded-(--radius) px-2 py-2.5 text-left text-sm text-(--fg-muted) hover:bg-(--surface-2) hover:text-(--fg) lg:py-1.5"
-			>
-				<LogOut className="h-4 w-4" />
-				Sign out
-			</Link>
+			<form method="post" action="/api/auth/logout">
+				<button
+					type="submit"
+					className="mt-1 flex w-full items-center gap-2 rounded-(--radius) px-2 py-2.5 text-left text-sm text-(--fg-muted) hover:bg-(--surface-2) hover:text-(--fg) lg:py-1.5"
+				>
+					<LogOut className="h-4 w-4" />
+					Sign out
+				</button>
+			</form>
 		</div>
 	);
 }
 
-function SidebarContent({ session, services }: Omit<Props, "mode">) {
+function SidebarContent({
+	session,
+	services,
+	servicesUnavailable,
+}: Omit<Props, "mode">) {
 	const location = useLocation();
 
 	const activeServiceWithSidebar = services.find(
@@ -278,13 +296,20 @@ function SidebarContent({ session, services }: Omit<Props, "mode">) {
 	const svcSidebar = svcManifest?.sidebar;
 
 	const [userPermissions, setUserPermissions] = useState<string[]>([]);
+	const [orgRoles, setOrgRoles] = useState<{ role: string }[]>([]);
 	const activeSlug = activeServiceWithSidebar?.slug;
 	useEffect(() => {
 		if (!activeSlug) return;
 		fetch(`/api/permissions/${activeSlug}`)
-			.then((res) => (res.ok ? res.json() : { permissions: [] }))
-			.then((data) => setUserPermissions(data.permissions ?? []))
-			.catch(() => setUserPermissions([]));
+			.then((res) => (res.ok ? res.json() : { permissions: [], orgRoles: [] }))
+			.then((data) => {
+				setUserPermissions(data.permissions ?? []);
+				setOrgRoles(data.orgRoles ?? []);
+			})
+			.catch(() => {
+				setUserPermissions([]);
+				setOrgRoles([]);
+			});
 	}, [activeSlug]);
 
 	const canSee = (item: { requiredPermission?: string }) => {
@@ -293,10 +318,11 @@ function SidebarContent({ session, services }: Omit<Props, "mode">) {
 	};
 
 	// Role-based visibility: coordinator = any admin/owner org role; convention-admin = global admin.
-	const isCoordinator =
-		session.user.orgRoles?.some(
-			(r) => r.role === "admin" || r.role === "owner",
-		) ?? false;
+	// orgRoles comes from the permissions fetch above rather than the session
+	// cookie, so this is false for a moment after mount until that resolves.
+	const isCoordinator = orgRoles.some(
+		(r) => r.role === "admin" || r.role === "owner",
+	);
 	const isConventionAdmin = session.user.role === "admin";
 
 	const itemVisible = (item: {
@@ -312,9 +338,11 @@ function SidebarContent({ session, services }: Omit<Props, "mode">) {
 		const svc = activeServiceWithSidebar;
 		return (
 			<div className="flex h-full flex-col">
-				{/* Service-name header lives in the global TopBar — sidebar leads
-				    directly with the primary action so it stays distraction-free. */}
-				<div className="pt-4" />
+				{/* Service-name header lives in the global TopBar; the brand mark
+				    leads here so it stays top left on every page. */}
+				<div className="px-4 pt-5 pb-3">
+					<BrandMark />
+				</div>
 
 				{svcSidebar.primaryAction && (
 					<PrimaryActionButton
@@ -372,12 +400,7 @@ function SidebarContent({ session, services }: Omit<Props, "mode">) {
 	return (
 		<div className="flex h-full flex-col">
 			<div className="px-4 pt-5 pb-3">
-				<Link
-					to="/home"
-					className="text-base font-semibold tracking-tight text-(--fg)"
-				>
-					Dashboard
-				</Link>
+				<BrandMark />
 			</div>
 
 			<nav className="flex-1 space-y-0.5 overflow-y-auto px-4">
@@ -389,6 +412,13 @@ function SidebarContent({ session, services }: Omit<Props, "mode">) {
 					<LayoutDashboard className="h-4 w-4" />
 					Home
 				</Link>
+
+				{servicesUnavailable && (
+					<p className="flex items-center gap-2 px-2.5 py-2 text-xs text-(--fg-muted)">
+						<TriangleAlert className="h-4 w-4 text-(--warning)" />
+						Apps can't be loaded right now
+					</p>
+				)}
 
 				{/* Inline services (like Departments) */}
 				{services
@@ -462,15 +492,30 @@ function SidebarContent({ session, services }: Omit<Props, "mode">) {
 	);
 }
 
-export function DynamicSidebar({ session, services, mode = "static" }: Props) {
+export function DynamicSidebar({
+	session,
+	services,
+	servicesUnavailable,
+	mode = "static",
+}: Props) {
 	if (mode === "drawer") {
 		// Drawer wraps this content in its own <aside>; return the raw content.
-		return <SidebarContent session={session} services={services} />;
+		return (
+			<SidebarContent
+				session={session}
+				services={services}
+				servicesUnavailable={servicesUnavailable}
+			/>
+		);
 	}
 
 	return (
 		<aside className="flex w-[260px] flex-col border-r border-[var(--border)] bg-[var(--surface-1)]">
-			<SidebarContent session={session} services={services} />
+			<SidebarContent
+				session={session}
+				services={services}
+				servicesUnavailable={servicesUnavailable}
+			/>
 		</aside>
 	);
 }

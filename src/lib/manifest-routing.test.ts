@@ -1,6 +1,11 @@
 import type { PageDefinition } from "@convstack/service-sdk/types";
 import { describe, expect, it } from "vitest";
-import { findPage, interpolateEndpoint, matchPath } from "./manifest-routing";
+import {
+	findPage,
+	interpolateEndpoint,
+	matchPath,
+	sectionUrl,
+} from "./manifest-routing";
 
 // ---------------------------------------------------------------------------
 // matchPath
@@ -161,5 +166,42 @@ describe("interpolateEndpoint", () => {
 				orgId: "acme",
 			}),
 		).toBe("/api/orgs/acme/users/:userId");
+	});
+});
+
+describe("sectionUrl", () => {
+	const base = "http://guidebook:5000";
+
+	it.each([
+		["/api/pages", "http://guidebook:5000/api/pages"],
+		["/%2F/evil.test", "http://guidebook:5000/%2F/evil.test"],
+		["//evil.test/x", "http://guidebook:5000//evil.test/x"],
+		["/\\evil.test/x", "http://guidebook:5000//evil.test/x"],
+		["/\t/evil.test/x", "http://guidebook:5000//evil.test/x"],
+		["//guidebook:6000/x", "http://guidebook:5000//guidebook:6000/x"],
+	])("keeps %j on the service's host", (endpoint, href) => {
+		expect(sectionUrl(endpoint, base)?.href).toBe(href);
+	});
+
+	it("keeps the base url's path", () => {
+		expect(sectionUrl("/api/pages", "http://guidebook:5000/wiki")?.href).toBe(
+			"http://guidebook:5000/wiki/api/pages",
+		);
+	});
+
+	it("throws for an empty base url, which the loaders treat as no data", () => {
+		expect(() => sectionUrl("/api/x", "")).toThrow();
+	});
+
+	it("throws for a base url that only parses with the endpoint", () => {
+		expect(() => sectionUrl("/evil.test/x", "http:/")).toThrow();
+	});
+
+	it.each([
+		"@evil.test/x",
+		"https://evil.test/x",
+		"\\\\evil.test/x",
+	])("refuses %j, which doesn't start with a slash", (endpoint) => {
+		expect(sectionUrl(endpoint, base)).toBeNull();
 	});
 });

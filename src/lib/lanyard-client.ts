@@ -1,4 +1,6 @@
-const LANYARD_URL = process.env.LANYARD_URL || "http://localhost:3000";
+const LANYARD_URL = (
+	process.env.LANYARD_URL || "http://localhost:3000"
+).replace(/\/+$/, "");
 
 export async function lanyardFetch(
 	path: string,

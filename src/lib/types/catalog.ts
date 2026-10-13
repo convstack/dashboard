@@ -12,4 +12,6 @@ export interface ServiceCatalogEntry {
 	status: string;
 	lastHealthCheck: string | null;
 	lastHealthStatus: string | null;
+	// lanyard's own pages (my-account, departments, lanyard-admin)
+	lanyardOwned?: boolean;
 }

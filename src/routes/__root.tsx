@@ -5,21 +5,31 @@ import {
 	HeadContent,
 	Outlet,
 	Scripts,
+	useRouter,
 } from "@tanstack/react-router";
+import { brandingCss, safeBrandImage } from "~/lib/branding";
+import { getBrandingFn } from "~/server/functions/branding";
 import appCss from "~/styles/app.css?url";
 
 export const Route = createRootRoute({
-	head: () => ({
-		meta: [
-			{ charSet: "utf-8" },
-			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ name: "description", content: "Convention Dashboard" },
-		],
-		links: [
-			{ rel: "stylesheet", href: appCss },
-			{ rel: "icon", href: "/favicon.ico" },
-		],
-	}),
+	loader: () => getBrandingFn(),
+	head: ({ loaderData }) => {
+		const favicon = loaderData ? safeBrandImage(loaderData.faviconUrl) : null;
+		return {
+			meta: [
+				{ charSet: "utf-8" },
+				{ name: "viewport", content: "width=device-width, initial-scale=1" },
+				{ name: "description", content: "Convention Dashboard" },
+				{ title: loaderData?.name ?? "ConvStack" },
+			],
+			links: [
+				{ rel: "stylesheet", href: appCss },
+				favicon
+					? { rel: "icon", href: favicon }
+					: { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+			],
+		};
+	},
 	component: RootComponent,
 	notFoundComponent: () => (
 		<div className="flex min-h-screen items-center justify-center">
@@ -32,12 +42,19 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+	const nonce = useRouter().options.ssr?.nonce;
+	const css = brandingCss(Route.useLoaderData());
+
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
-				<title>Dashboard</title>
+				{css && (
+					<style nonce={nonce} dangerouslySetInnerHTML={{ __html: css }} />
+				)}
 				<script
+					nonce={nonce}
+					suppressHydrationWarning
 					dangerouslySetInnerHTML={{
 						__html: `
               (function() {

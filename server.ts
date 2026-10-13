@@ -1,5 +1,12 @@
 import { join } from "node:path";
 import app from "./dist/server/server.js";
+import { parseSources } from "./src/lib/security/csp";
+
+parseSources("DASHBOARD_CSP_IMG_SRC", process.env.DASHBOARD_CSP_IMG_SRC);
+parseSources(
+	"DASHBOARD_CSP_CONNECT_SRC",
+	process.env.DASHBOARD_CSP_CONNECT_SRC,
+);
 
 const DIST_CLIENT = join(import.meta.dir, "dist", "client");
 
@@ -48,9 +55,21 @@ Bun.serve({
 					headers: {
 						"Content-Type": getMimeType(pathname),
 						"Cache-Control": "public, max-age=31536000, immutable",
+						"X-Content-Type-Options": "nosniff",
 					},
 				});
 			}
+		}
+
+		// without it the app would render a page, and ask lanyard, for every icon request
+		if (pathname === "/favicon.svg") {
+			return new Response(Bun.file(join(DIST_CLIENT, "favicon.svg")), {
+				headers: {
+					"Content-Type": "image/svg+xml",
+					"Cache-Control": "public, max-age=86400",
+					"X-Content-Type-Options": "nosniff",
+				},
+			});
 		}
 
 		// Forward everything else to TanStack Start handler

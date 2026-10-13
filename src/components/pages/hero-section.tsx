@@ -2,6 +2,7 @@ import type { HeroConfig, PageSection } from "@convstack/service-sdk/types";
 import { Link } from "@tanstack/react-router";
 import { DynamicIcon } from "~/components/layout/dynamic-icon";
 import { Badge } from "~/components/ui/badge";
+import { SafeImg } from "~/components/ui/safe-img";
 
 interface Props {
 	section: PageSection;
@@ -15,7 +16,7 @@ export function HeroSection({ section, serviceSlug }: Props) {
 		<header className="flex flex-col gap-4 border-b border-[var(--border)] pb-6 sm:flex-row sm:items-start sm:gap-6">
 			{/* Avatar or icon */}
 			{config.avatar && (
-				<img
+				<SafeImg
 					src={config.avatar}
 					alt=""
 					className="h-16 w-16 shrink-0 rounded-full object-cover sm:h-24 sm:w-24"

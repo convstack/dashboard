@@ -1,48 +1,61 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { DashboardShell } from "~/components/layout/dashboard-shell";
-import type { SessionData } from "~/lib/auth";
+import { computeRefreshDelayMs } from "~/lib/refresh-timing";
+import type { ClientSession } from "~/lib/session-view";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import { getSessionFn } from "~/server/functions/auth";
 import { getServiceCatalogFn } from "~/server/functions/catalog";
 
 export interface AuthenticatedContext {
-	session: SessionData;
+	session: ClientSession;
 	services: ServiceCatalogEntry[];
+	servicesUnavailable: boolean;
+}
+
+interface ServiceList {
+	services: ServiceCatalogEntry[];
+	unavailable: boolean;
 }
 
 // Module-level cache that survives across all router operations
 let serviceCache: ServiceCatalogEntry[] = [];
 let lastFetchTime = 0;
-let cachedForToken = "";
+let cachedForUser = "";
 const CACHE_DURATION = 30_000; // 30 seconds
 
-async function getServices(
-	accessToken: string,
-): Promise<ServiceCatalogEntry[]> {
-	// Invalidate cache if user changed (different token)
-	if (cachedForToken && cachedForToken !== accessToken) {
+async function getServices(userId: string): Promise<ServiceList> {
+	// the server renders for every user, so only the browser reuses a list
+	if (typeof window === "undefined") {
+		try {
+			return { services: await getServiceCatalogFn(), unavailable: false };
+		} catch {
+			return { services: [], unavailable: true };
+		}
+	}
+
+	// Invalidate cache if user changed
+	if (cachedForUser && cachedForUser !== userId) {
 		serviceCache = [];
 		lastFetchTime = 0;
 	}
 
 	// Return cache if fresh
-	if (serviceCache.length > 0 && Date.now() - lastFetchTime < CACHE_DURATION) {
-		return serviceCache;
+	if (Date.now() - lastFetchTime < CACHE_DURATION) {
+		return { services: serviceCache, unavailable: false };
 	}
 
 	try {
-		const fresh = await getServiceCatalogFn({ data: { accessToken } });
-		if (fresh.length > 0) {
-			serviceCache = fresh;
-			lastFetchTime = Date.now();
-			cachedForToken = accessToken;
-		}
+		// an empty answer counts too: a refused session must lose its old list
+		serviceCache = await getServiceCatalogFn();
+		lastFetchTime = Date.now();
+		cachedForUser = userId;
 	} catch {
 		// Keep stale cache
+		return { services: serviceCache, unavailable: serviceCache.length === 0 };
 	}
 
-	return serviceCache;
+	return { services: serviceCache, unavailable: false };
 }
 
 export const Route = createFileRoute("/_authenticated")({
@@ -52,8 +65,12 @@ export const Route = createFileRoute("/_authenticated")({
 			throw redirect({ to: "/login" });
 		}
 
-		const services = await getServices(session.accessToken);
-		return { session, services } as AuthenticatedContext;
+		const { services, unavailable } = await getServices(session.user.id);
+		return {
+			session,
+			services,
+			servicesUnavailable: unavailable,
+		} as AuthenticatedContext;
 	},
 	shouldReload: true,
 	component: AuthenticatedLayout,
@@ -79,18 +96,21 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-	const { session, services } = Route.useRouteContext();
+	const { session, services, servicesUnavailable } = Route.useRouteContext();
 
 	useEffect(() => {
 		const timeUntilExpiry = session.expiresAt - Date.now() / 1000;
-		const refreshIn = Math.max((timeUntilExpiry - 300) * 1000, 0);
+		const refreshIn = computeRefreshDelayMs(timeUntilExpiry);
 
 		const timer = setTimeout(async () => {
 			const res = await fetch("/api/auth/refresh", { method: "POST" });
-			if (res.ok) {
-				window.location.reload();
-			} else {
+			if (!res.ok) {
 				window.location.href = "/login";
+				return;
+			}
+			const data = await res.json().catch(() => ({}));
+			if (data.refreshed) {
+				window.location.reload();
 			}
 		}, refreshIn);
 
@@ -98,7 +118,11 @@ function AuthenticatedLayout() {
 	}, [session.expiresAt]);
 
 	return (
-		<DashboardShell session={session} services={services}>
+		<DashboardShell
+			session={session}
+			services={services}
+			servicesUnavailable={servicesUnavailable}
+		>
 			<Outlet />
 		</DashboardShell>
 	);

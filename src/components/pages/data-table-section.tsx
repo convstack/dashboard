@@ -11,8 +11,10 @@ import { ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { SafeImg } from "~/components/ui/safe-img";
 import { formatCellByType, formatCellValue } from "~/lib/format";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
+import { proxyPath } from "~/lib/proxy-path";
 import { EmptyStateSection } from "./empty-state-section";
 
 interface TableData {
@@ -133,7 +135,7 @@ function renderCell(value: unknown, column: DataTableColumn): React.ReactNode {
 		return (
 			<div className="flex items-center gap-2">
 				{obj.avatar ? (
-					<img
+					<SafeImg
 						src={obj.avatar}
 						alt=""
 						className="h-6 w-6 rounded-full object-cover"
@@ -258,9 +260,9 @@ export function DataTableSection({
 	}
 
 	async function executeAction(action: RowAction, endpoint: string) {
-		await fetch(`/api/proxy/${serviceSlug}${endpoint}`, {
-			method: action.method,
-		});
+		const path = proxyPath(serviceSlug, endpoint);
+		if (!path) return;
+		await fetch(path, { method: action.method });
 		router.invalidate();
 	}
 

@@ -1,6 +1,8 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { SafeImg } from "~/components/ui/safe-img";
 import type { KanbanCard, KanbanColumn } from "~/lib/kanban/types";
+import { proxyPath } from "~/lib/proxy-path";
 
 type DeptOption = { value: string; label: string };
 type TeamEntry = { id: string; name: string };
@@ -44,7 +46,7 @@ function Avatar({ name, avatar }: { name: string; avatar?: string }) {
 
 	if (avatar) {
 		return (
-			<img
+			<SafeImg
 				src={avatar}
 				alt={name}
 				title={name}
@@ -185,13 +187,20 @@ export function KanbanCardModal({
 	const [commentBusy, setCommentBusy] = useState(false);
 	const [commentsLoading, setCommentsLoading] = useState(true);
 
-	const commentsUrl = `/api/proxy/${serviceSlug}/api/boards/${boardSlug}/cards/${localCard.id}/comments`;
+	const commentsUrl = proxyPath(
+		serviceSlug,
+		`/api/boards/${boardSlug}/cards/${localCard.id}/comments`,
+	);
 
 	useEffect(() => {
 		closeButtonRef.current?.focus();
 	}, []);
 
 	useEffect(() => {
+		if (!commentsUrl) {
+			setCommentsLoading(false);
+			return;
+		}
 		let cancelled = false;
 		setCommentsLoading(true);
 		fetch(commentsUrl, { credentials: "include" })
@@ -226,17 +235,16 @@ export function KanbanCardModal({
 
 	async function patchCard(field: string, value: unknown) {
 		if (!localCard._links?.update) return;
+		const path = proxyPath(serviceSlug, localCard._links.update);
+		if (!path) throw new Error("Invalid endpoint");
 		setError("");
 		setLocalCard((prev) => ({ ...prev, [field]: value }) as typeof prev);
-		const res = await fetch(
-			`/api/proxy/${serviceSlug}${localCard._links.update}`,
-			{
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ [field]: value }),
-			},
-		);
+		const res = await fetch(path, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ [field]: value }),
+		});
 		if (!res.ok) {
 			setLocalCard(card);
 			throw new Error(await res.text().catch(() => `${res.status}`));
@@ -249,15 +257,14 @@ export function KanbanCardModal({
 		setMovesBusy(true);
 		setError("");
 		try {
-			const res = await fetch(
-				`/api/proxy/${serviceSlug}${localCard._links.update}`,
-				{
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					credentials: "include",
-					body: JSON.stringify({ columnId: newColumnId }),
-				},
-			);
+			const path = proxyPath(serviceSlug, localCard._links.update);
+			if (!path) throw new Error("Invalid endpoint");
+			const res = await fetch(path, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ columnId: newColumnId }),
+			});
 			if (!res.ok)
 				throw new Error(await res.text().catch(() => `${res.status}`));
 			setMovingTo(newColumnId);
@@ -274,13 +281,12 @@ export function KanbanCardModal({
 		setDeleteBusy(true);
 		setError("");
 		try {
-			const res = await fetch(
-				`/api/proxy/${serviceSlug}${localCard._links.delete}`,
-				{
-					method: "DELETE",
-					credentials: "include",
-				},
-			);
+			const path = proxyPath(serviceSlug, localCard._links.delete);
+			if (!path) throw new Error("Invalid endpoint");
+			const res = await fetch(path, {
+				method: "DELETE",
+				credentials: "include",
+			});
 			if (!res.ok)
 				throw new Error(await res.text().catch(() => `${res.status}`));
 			router.invalidate();
@@ -297,6 +303,7 @@ export function KanbanCardModal({
 		if (!trimmed) return;
 		setCommentBusy(true);
 		try {
+			if (!commentsUrl) throw new Error("Invalid endpoint");
 			const res = await fetch(commentsUrl, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -721,6 +728,18 @@ export function KanbanCardModal({
 																	checked={checked}
 																	disabled={isPrimary}
 																	onChange={(e) => {
+																		const path =
+																			localCard._links?.update &&
+																			proxyPath(
+																				serviceSlug,
+																				localCard._links.update,
+																			);
+																		if (!path) {
+																			setError(
+																				"Couldn't update collaborators: Invalid endpoint",
+																			);
+																			return;
+																		}
 																		const next = e.target.checked
 																			? [
 																					...current,
@@ -733,21 +752,18 @@ export function KanbanCardModal({
 																			...prev,
 																			collaborators: next,
 																		}));
-																		fetch(
-																			`/api/proxy/${serviceSlug}${localCard._links!.update}`,
-																			{
-																				method: "PATCH",
-																				headers: {
-																					"Content-Type": "application/json",
-																				},
-																				credentials: "include",
-																				body: JSON.stringify({
-																					collaboratorUserIds: next.map(
-																						(c) => c.userId,
-																					),
-																				}),
+																		fetch(path, {
+																			method: "PATCH",
+																			headers: {
+																				"Content-Type": "application/json",
 																			},
-																		)
+																			credentials: "include",
+																			body: JSON.stringify({
+																				collaboratorUserIds: next.map(
+																					(c) => c.userId,
+																				),
+																			}),
+																		})
 																			.then((res) => {
 																				if (!res.ok) {
 																					setLocalCard(card);

@@ -1,7 +1,7 @@
-import DOMPurify from "isomorphic-dompurify";
 import { useEffect, useRef } from "react";
 import { formatDate } from "~/lib/format";
 import { marked, preprocessMarkdown } from "~/lib/markdown";
+import { sanitizeMarkdownHtml } from "~/lib/markdown-sanitize";
 import { TocPopup } from "./toc-popup";
 
 interface DiffLine {
@@ -69,7 +69,7 @@ function DiffView({ diff }: { diff: DiffLine[] }) {
 	);
 }
 
-export function MarkdownSection({ data, showToc = false }: Props) {
+export function MarkdownSection({ data, serviceSlug, showToc = false }: Props) {
 	const articleRef = useRef<HTMLElement>(null);
 
 	useEffect(() => {
@@ -144,10 +144,7 @@ export function MarkdownSection({ data, showToc = false }: Props) {
 	const rawHtml = marked.parse(preprocessMarkdown(data.content), {
 		async: false,
 	}) as string;
-	const cleanHtml = DOMPurify.sanitize(rawHtml, {
-		ADD_TAGS: ["input"],
-		ADD_ATTR: ["checked", "disabled", "type"],
-	});
+	const cleanHtml = sanitizeMarkdownHtml(rawHtml, serviceSlug);
 
 	return (
 		<div className="relative">

@@ -4,6 +4,7 @@ import type {
 	ApprovalQueueItem,
 } from "@convstack/service-sdk/types";
 import { useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 
 interface Props {
 	config: ApprovalQueueConfig;
@@ -57,10 +58,12 @@ export function ApprovalQueueSection({ config, data, serviceSlug }: Props) {
 		if (!item._links?.approve) return;
 		setBusy(item.id);
 		try {
-			const res = await fetch(
-				`/api/proxy/${serviceSlug}${item._links.approve}`,
-				{ method: "POST", credentials: "include" },
-			);
+			const path = proxyPath(serviceSlug, item._links.approve);
+			if (!path) throw new Error("Invalid endpoint");
+			const res = await fetch(path, {
+				method: "POST",
+				credentials: "include",
+			});
 			if (!res.ok) throw new Error(await res.text());
 			setItems((prev) => prev.filter((i) => i.id !== item.id));
 		} catch (err) {
@@ -75,15 +78,14 @@ export function ApprovalQueueSection({ config, data, serviceSlug }: Props) {
 		if (!item._links?.decline) return;
 		setBusy(item.id);
 		try {
-			const res = await fetch(
-				`/api/proxy/${serviceSlug}${item._links.decline}`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					credentials: "include",
-					body: JSON.stringify({ reason: declineReason || undefined }),
-				},
-			);
+			const path = proxyPath(serviceSlug, item._links.decline);
+			if (!path) throw new Error("Invalid endpoint");
+			const res = await fetch(path, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ reason: declineReason || undefined }),
+			});
 			if (!res.ok) throw new Error(await res.text());
 			setItems((prev) => prev.filter((i) => i.id !== item.id));
 			setDeclineTarget(null);

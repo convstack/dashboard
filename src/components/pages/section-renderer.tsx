@@ -7,8 +7,6 @@ import type {
 	PageSection,
 } from "@convstack/service-sdk/types";
 import { lazy, Suspense } from "react";
-import { PasskeySection } from "~/components/sections/passkey-section";
-import { TwoFactorSection } from "~/components/sections/two-factor-section";
 import { SectionSkeleton } from "~/components/ui/section-skeleton";
 import { WidgetRenderer } from "~/components/widgets/widget-renderer";
 import type {
@@ -147,10 +145,6 @@ export function SectionRenderer({
 					))}
 				</div>
 			);
-		case "two-factor":
-			return <TwoFactorSection serviceSlug={service.slug} />;
-		case "passkey-manager":
-			return <PasskeySection serviceSlug={service.slug} />;
 		case "markdown":
 			return (
 				<MarkdownSection

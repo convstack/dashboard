@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { addDays, endOfDay, format, startOfDay, subDays } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 import { expandRecurrences } from "~/lib/schedule/expand-recurrences";
 import type {
 	CalendarGridConfig,
@@ -70,7 +71,7 @@ export function CalendarGridSection({
 		[data, window, hiddenTracks],
 	);
 
-	const drag = useDragToMove(undefined, (err, ev) => {
+	const drag = useDragToMove(serviceSlug, undefined, (err, ev) => {
 		console.warn(`couldn't move ${ev.title}:`, err);
 	});
 
@@ -215,11 +216,18 @@ export function CalendarGridSection({
 						setEditEvent(e);
 					}}
 					onDelete={async (e) => {
-						if (!e._links?.delete) return;
-						await fetch(e._links.delete, {
+						const path = e._links?.delete
+							? proxyPath(serviceSlug, e._links.delete)
+							: null;
+						if (!path) return;
+						const res = await fetch(path, {
 							method: "DELETE",
 							credentials: "include",
 						});
+						if (!res.ok) {
+							alert(`Couldn't delete: ${res.status}`);
+							return;
+						}
 						setPopoverEvent(null);
 						router.invalidate();
 					}}

@@ -1,13 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DynamicPage } from "~/components/pages/dynamic-page";
-import { interpolateEndpoint } from "~/lib/manifest-routing";
-import { resolvePermissions } from "~/lib/service-proxy";
+import { interpolateEndpoint, sectionUrl } from "~/lib/manifest-routing";
+import { proxyPath } from "~/lib/proxy-path";
+import { serverServiceTarget } from "~/lib/server-target";
+import { lanyardPathAllowed } from "~/lib/service-proxy";
 import type { AuthenticatedContext } from "~/routes/_authenticated";
 
 export const Route = createFileRoute("/_authenticated/$service/")({
 	loader: async ({ params, context }) => {
 		const ctx = context as unknown as AuthenticatedContext;
 		const service = ctx.services.find((s) => s.slug === params.service);
+		if (!service && ctx.servicesUnavailable) {
+			throw new Error(
+				"Your apps can't be loaded right now. Reload in a moment.",
+			);
+		}
 		if (!service || !service.uiManifest) return null;
 
 		const page =
@@ -18,27 +25,16 @@ export const Route = createFileRoute("/_authenticated/$service/")({
 			return { service, page: null, sectionData: [], pathParams: {} };
 		}
 
-		// Resolve permissions once for all sections (server-side only — on the
-		// client, the proxy resolves them per-request).
+		// Where sections come from, and with which credential, once for all
+		// sections (server-side only - on the client, the proxy decides per request).
 		const isServer = typeof window === "undefined";
-		let permissions: string[] = [];
-		let orgRoles: Array<{ orgId: string; slug: string; role: string }> = [];
-		if (isServer) {
-			const resolved = await resolvePermissions(
-				ctx.session.accessToken,
-				service.slug,
-			);
-			permissions = resolved.permissions;
-			orgRoles = resolved.orgRoles;
-		}
+		const target = isServer ? await serverServiceTarget(service) : null;
 
 		const sectionData = await Promise.all(
 			page.sections.map(async (section) => {
 				if (
 					!section.endpoint ||
 					section.type === "form" ||
-					section.type === "two-factor" ||
-					section.type === "passkey-manager" ||
 					section.type === "markdown-editor" ||
 					section.type === "widget-grid" ||
 					section.type === "search"
@@ -47,18 +43,27 @@ export const Route = createFileRoute("/_authenticated/$service/")({
 				}
 				const endpoint = interpolateEndpoint(section.endpoint, {});
 				try {
-					const url = isServer
-						? `${service.baseUrl}${endpoint}`
-						: `/api/proxy/${service.slug}${endpoint}`;
 					const headers: Record<string, string> = {};
-					if (isServer) {
-						headers.Authorization = `Bearer ${ctx.session.accessToken}`;
-						headers["X-User-Id"] = ctx.session.user.id;
-						headers["X-User-Email"] = ctx.session.user.email;
-						headers["X-User-Permissions"] = permissions.join(",");
-						headers["X-User-Org-Roles"] = JSON.stringify(orgRoles);
+					let url: string | null;
+					if (target) {
+						const checked = sectionUrl(endpoint, target.baseUrl);
+						if (!checked) return null;
+						if (service.lanyardOwned && !lanyardPathAllowed(checked)) {
+							return null;
+						}
+						url = checked.href;
+						if (!target.authorization) return null;
+						headers.Authorization = target.authorization;
+					} else {
+						url = proxyPath(service.slug, endpoint);
+						if (!url) return null;
 					}
-					const response = await fetch(url, { headers });
+					const response = await fetch(url, {
+						headers,
+						...(target && service.lanyardOwned
+							? { redirect: "manual" as const }
+							: {}),
+					});
 					if (!response.ok) return null;
 					return response.json();
 				} catch {

@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
+import { proxyPath } from "~/lib/proxy-path";
 
 interface Props {
 	section: PageSection;
@@ -38,9 +39,13 @@ export function ActionBarSection({ data, pathParams, serviceSlug }: Props) {
 		setLoading(true);
 		try {
 			const endpoint = interpolateEndpoint(action.endpoint, pathParams);
-			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`, {
-				method: action.method,
-			});
+			const path = proxyPath(serviceSlug, endpoint);
+			if (!path) {
+				setResult({ ok: false, message: "Invalid endpoint" });
+				setLoading(false);
+				return;
+			}
+			const response = await fetch(path, { method: action.method });
 			if (response.ok) {
 				const body = await response.json().catch(() => null);
 

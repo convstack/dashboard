@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 
 interface SearchResult {
 	label: string;
@@ -42,9 +43,12 @@ export function SearchField({
 			}
 			setSearching(true);
 			try {
-				const res = await fetch(
-					`/api/proxy/${serviceSlug}${searchEndpoint}?q=${encodeURIComponent(q)}`,
+				const path = proxyPath(
+					serviceSlug,
+					`${searchEndpoint}?q=${encodeURIComponent(q)}`,
 				);
+				if (!path) throw new Error("Invalid endpoint");
+				const res = await fetch(path);
 				if (res.ok) {
 					const data = await res.json();
 					const items: SearchResult[] = (data.results ?? data.rows ?? []).map(

@@ -1,5 +1,6 @@
 import type { WidgetDefinition } from "@convstack/service-sdk/types";
 import { useEffect, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 import { ChartWidget } from "./chart-widget";
 import { ListWidget } from "./list-widget";
@@ -21,10 +22,14 @@ export function WidgetRenderer({ widget, service }: Props) {
 		let cancelled = false;
 
 		async function fetchData() {
+			const path = proxyPath(service.slug, widget.endpoint);
+			if (!path) {
+				setError("Invalid endpoint");
+				setLoading(false);
+				return;
+			}
 			try {
-				const response = await fetch(
-					`/api/proxy/${service.slug}${widget.endpoint}`,
-				);
+				const response = await fetch(path);
 				if (!response.ok) {
 					setError(`Failed to load (${response.status})`);
 					setLoading(false);

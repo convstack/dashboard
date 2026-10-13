@@ -1,14 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import { lanyardFetch } from "~/lib/lanyard-client";
+import { getRequest } from "@tanstack/react-start/server";
+import { readSession } from "~/lib/auth";
+import { forBrowser } from "~/lib/browser-catalog";
+import { getShellCatalog } from "~/lib/service-proxy";
 import type { ServiceCatalogEntry } from "~/lib/types/catalog";
 
-export const getServiceCatalogFn = createServerFn({ method: "GET" })
-	.inputValidator((input: { accessToken: string }) => input)
-	.handler(async ({ data }): Promise<ServiceCatalogEntry[]> => {
-		const response = await lanyardFetch("/api/services/catalog", {
-			accessToken: data.accessToken,
-		});
-
-		if (!response.ok) return [];
-		return response.json();
-	});
+export const getServiceCatalogFn = createServerFn({ method: "GET" }).handler(
+	async (): Promise<ServiceCatalogEntry[]> => {
+		const session = await readSession(getRequest());
+		if (!session) return [];
+		return forBrowser(
+			await getShellCatalog(session.user.id, session.accessToken),
+		);
+	},
+);

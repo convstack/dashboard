@@ -7,6 +7,7 @@ import type {
 import { Link } from "@tanstack/react-router";
 import { DynamicIcon } from "~/components/layout/dynamic-icon";
 import { Badge } from "~/components/ui/badge";
+import { SafeImg } from "~/components/ui/safe-img";
 import { EmptyStateSection } from "./empty-state-section";
 
 interface CardItem {
@@ -64,7 +65,7 @@ function CardBody({ card }: { card: CardItem }) {
 		<div className="flex flex-col gap-3 p-4">
 			<div className="flex items-start gap-3">
 				{card.image && (
-					<img
+					<SafeImg
 						src={card.image}
 						alt=""
 						className="h-10 w-10 shrink-0 rounded-[var(--radius)] object-cover"

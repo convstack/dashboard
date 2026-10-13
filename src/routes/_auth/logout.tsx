@@ -1,50 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
-import { LANYARD_URL } from "~/lib/lanyard-client";
-
-const getLogoutConfigFn = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const dashboardUrl = process.env.DASHBOARD_URL || "http://localhost:4000";
-		const clientId = process.env.DASHBOARD_CLIENT_ID || "dashboard";
-		return {
-			lanyardUrl: LANYARD_URL,
-			clientId,
-			dashboardUrl,
-		};
-	},
-);
 
 export const Route = createFileRoute("/_auth/logout")({
-	loader: () => getLogoutConfigFn(),
 	component: LogoutPage,
 });
 
 function LogoutPage() {
-	const { lanyardUrl, clientId, dashboardUrl } = Route.useLoaderData();
-
-	useEffect(() => {
-		async function logout() {
-			// 1. Clear Dashboard session cookie and get the ID token
-			const res = await fetch("/api/auth/logout", { method: "POST" });
-			const data = await res.json().catch(() => ({}));
-
-			// 2. Redirect to Lanyard's end-session with id_token_hint
-			const params = new URLSearchParams({
-				client_id: clientId,
-				post_logout_redirect_uri: `${dashboardUrl}/login`,
-			});
-			if (data.idToken) {
-				params.set("id_token_hint", data.idToken);
-			}
-			window.location.href = `${lanyardUrl}/api/auth/oauth2/end-session?${params.toString()}`;
-		}
-		logout();
-	}, [lanyardUrl, clientId, dashboardUrl]);
-
 	return (
 		<div className="flex min-h-screen items-center justify-center">
-			<p className="text-sm text-(--muted-foreground)">Signing out...</p>
+			<form
+				method="post"
+				action="/api/auth/logout"
+				className="w-full max-w-sm space-y-6 rounded-lg border border-(--border) bg-(--card) p-8 text-center"
+			>
+				<h1 className="text-2xl font-bold">Sign out</h1>
+				<p className="text-sm text-(--muted-foreground)">
+					You will be signed out of the dashboard and your sign-in session.
+				</p>
+				<button
+					type="submit"
+					className="w-full rounded-md bg-(--primary) px-4 py-2.5 text-sm font-medium text-(--primary-foreground) hover:opacity-90"
+				>
+					Sign out
+				</button>
+			</form>
 		</div>
 	);
 }

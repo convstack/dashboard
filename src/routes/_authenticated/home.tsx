@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppsEmptyState } from "~/components/layout/apps-empty-state";
 import { DynamicIcon } from "~/components/layout/dynamic-icon";
 
 export const Route = createFileRoute("/_authenticated/home")({
@@ -6,7 +7,7 @@ export const Route = createFileRoute("/_authenticated/home")({
 });
 
 function HomePage() {
-	const { session, services } = Route.useRouteContext();
+	const { session, services, servicesUnavailable } = Route.useRouteContext();
 
 	// Filter out Lanyard's own services — they're admin/account tools, not "apps"
 	const appServices = services.filter(
@@ -25,19 +26,7 @@ function HomePage() {
 			</p>
 
 			{appServices.length === 0 ? (
-				<div className="mt-8 rounded-lg border border-dashed border-(--border) p-12 text-center">
-					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-(--muted)">
-						<DynamicIcon
-							name="box"
-							className="h-6 w-6 text-(--muted-foreground)"
-						/>
-					</div>
-					<p className="text-sm font-medium">No apps connected yet</p>
-					<p className="mt-1 text-xs text-(--muted-foreground)">
-						When services register with Lanyard, they'll appear here as apps you
-						can access.
-					</p>
-				</div>
+				<AppsEmptyState unavailable={servicesUnavailable} />
 			) : (
 				<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{appServices.map((service) => (

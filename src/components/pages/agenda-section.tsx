@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { format as formatDate } from "date-fns";
 import { useMemo, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 import { expandRecurrences } from "~/lib/schedule/expand-recurrences";
 import {
 	formatDayHeader,
@@ -228,11 +229,18 @@ export function AgendaSection({ config, data, serviceSlug }: Props) {
 						setEditEvent(e);
 					}}
 					onDelete={async (e) => {
-						if (!e._links?.delete) return;
-						await fetch(e._links.delete, {
+						const path = e._links?.delete
+							? proxyPath(serviceSlug, e._links.delete)
+							: null;
+						if (!path) return;
+						const res = await fetch(path, {
 							method: "DELETE",
 							credentials: "include",
 						});
+						if (!res.ok) {
+							alert(`Couldn't delete: ${res.status}`);
+							return;
+						}
 						setPopoverEvent(null);
 						router.invalidate();
 					}}

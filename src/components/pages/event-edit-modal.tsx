@@ -1,5 +1,6 @@
 import type { FormConfig } from "@convstack/service-sdk/types";
 import { useEffect, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 import type { ScheduleEvent } from "~/lib/schedule/types";
 import { ControlledFormSection } from "./form-section";
 
@@ -44,7 +45,8 @@ export function EventEditModal({
 
 	const handleSubmit = async (values: Record<string, unknown>) => {
 		const url = isEdit ? event?._links?.update : createUrl;
-		if (!url) {
+		const path = url && proxyPath(serviceSlug, url);
+		if (!path) {
 			setError("No endpoint available for this action.");
 			return;
 		}
@@ -53,7 +55,7 @@ export function EventEditModal({
 		setError("");
 
 		try {
-			const res = await fetch(`/api/proxy/${serviceSlug}${url}`, {
+			const res = await fetch(path, {
 				method: isEdit ? "PATCH" : "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(values),

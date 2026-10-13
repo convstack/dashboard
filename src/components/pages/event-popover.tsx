@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { format as formatDate } from "date-fns";
 import { useEffect, useState } from "react";
+import { proxyPath } from "~/lib/proxy-path";
 import { formatEventTime } from "~/lib/schedule/format-time";
 import type { ScheduleEvent } from "~/lib/schedule/types";
 import { useTzPreference } from "~/lib/schedule/use-tz-preference";
@@ -61,7 +62,9 @@ export function EventPopover({
 		if (!link || !serviceSlug) return;
 		setBusy(kind);
 		try {
-			const res = await fetch(`/api/proxy/${serviceSlug}${link}`, {
+			const path = proxyPath(serviceSlug, link);
+			if (!path) throw new Error("Invalid endpoint");
+			const res = await fetch(path, {
 				method: "POST",
 				credentials: "include",
 			});

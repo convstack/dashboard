@@ -93,3 +93,15 @@ export function interpolateEndpoint(
 		return match;
 	});
 }
+
+/**
+ * Append a section endpoint to a service's base URL, keeping its path, for a
+ * server-side fetch. Returns null when the endpoint doesn't start with "/" or
+ * the result leaves the base URL's origin, so a manifest can't steer the
+ * user's credentials to another host.
+ */
+export function sectionUrl(endpoint: string, baseUrl: string): URL | null {
+	if (!endpoint.startsWith("/")) return null;
+	const url = new URL(baseUrl + endpoint);
+	return url.origin === new URL(baseUrl).origin ? url : null;
+}

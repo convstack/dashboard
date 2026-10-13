@@ -4,6 +4,7 @@ import type {
 	TimelineConfig,
 } from "@convstack/service-sdk/types";
 import { Link } from "@tanstack/react-router";
+import { SafeImg } from "~/components/ui/safe-img";
 import { formatDate } from "~/lib/format";
 import { EmptyStateSection } from "./empty-state-section";
 
@@ -131,7 +132,7 @@ export function TimelineSection({ section, data, serviceSlug }: Props) {
 									{event.actor && (
 										<div className="shrink-0">
 											{event.actor.avatar ? (
-												<img
+												<SafeImg
 													src={event.actor.avatar}
 													alt=""
 													className="h-6 w-6 rounded-full object-cover"

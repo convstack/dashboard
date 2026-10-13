@@ -9,21 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthLogoutRouteImport } from './routes/_auth/logout'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AuthCallbackRouteImport } from './routes/_auth/callback'
 import { Route as AuthenticatedServiceIndexRouteImport } from './routes/_authenticated/$service/index'
 import { Route as ApiPermissionsSlugRouteImport } from './routes/api/permissions/$slug'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
-import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBackchannelLogoutRouteImport } from './routes/api/auth/backchannel-logout'
 import { Route as AuthenticatedServiceSplatRouteImport } from './routes/_authenticated/$service/$'
 import { Route as ApiProxyServiceSplatRouteImport } from './routes/api/proxy/$service/$'
 
+const CallbackRoute = CallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -48,11 +53,6 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/_auth/callback',
-  path: '/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedServiceIndexRoute =
   AuthenticatedServiceIndexRouteImport.update({
     id: '/$service/',
@@ -74,9 +74,9 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
-  id: '/api/auth/callback',
-  path: '/api/auth/callback',
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthBackchannelLogoutRoute =
@@ -99,13 +99,13 @@ const ApiProxyServiceSplatRoute = ApiProxyServiceSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/callback': typeof AuthCallbackRoute
+  '/callback': typeof CallbackRoute
   '/login': typeof AuthLoginRoute
   '/logout': typeof AuthLogoutRoute
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
   '/api/auth/backchannel-logout': typeof ApiAuthBackchannelLogoutRoute
-  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/permissions/$slug': typeof ApiPermissionsSlugRoute
@@ -114,13 +114,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/callback': typeof AuthCallbackRoute
+  '/callback': typeof CallbackRoute
   '/login': typeof AuthLoginRoute
   '/logout': typeof AuthLogoutRoute
   '/home': typeof AuthenticatedHomeRoute
   '/$service/$': typeof AuthenticatedServiceSplatRoute
   '/api/auth/backchannel-logout': typeof ApiAuthBackchannelLogoutRoute
-  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/permissions/$slug': typeof ApiPermissionsSlugRoute
@@ -131,13 +131,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/_auth/callback': typeof AuthCallbackRoute
+  '/callback': typeof CallbackRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/logout': typeof AuthLogoutRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/$service/$': typeof AuthenticatedServiceSplatRoute
   '/api/auth/backchannel-logout': typeof ApiAuthBackchannelLogoutRoute
-  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/permissions/$slug': typeof ApiPermissionsSlugRoute
@@ -154,7 +154,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/$service/$'
     | '/api/auth/backchannel-logout'
-    | '/api/auth/callback'
+    | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/refresh'
     | '/api/permissions/$slug'
@@ -169,7 +169,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/$service/$'
     | '/api/auth/backchannel-logout'
-    | '/api/auth/callback'
+    | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/refresh'
     | '/api/permissions/$slug'
@@ -179,13 +179,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/_auth/callback'
+    | '/callback'
     | '/_auth/login'
     | '/_auth/logout'
     | '/_authenticated/home'
     | '/_authenticated/$service/$'
     | '/api/auth/backchannel-logout'
-    | '/api/auth/callback'
+    | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/refresh'
     | '/api/permissions/$slug'
@@ -196,11 +196,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  AuthCallbackRoute: typeof AuthCallbackRoute
+  CallbackRoute: typeof CallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
   ApiAuthBackchannelLogoutRoute: typeof ApiAuthBackchannelLogoutRoute
-  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
   ApiPermissionsSlugRoute: typeof ApiPermissionsSlugRoute
@@ -209,6 +209,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/callback': {
+      id: '/callback'
+      path: '/callback'
+      fullPath: '/callback'
+      preLoaderRoute: typeof CallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -244,13 +251,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/callback': {
-      id: '/_auth/callback'
-      path: '/callback'
-      fullPath: '/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/$service/': {
       id: '/_authenticated/$service/'
       path: '/$service'
@@ -279,11 +279,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/callback': {
-      id: '/api/auth/callback'
-      path: '/api/auth/callback'
-      fullPath: '/api/auth/callback'
-      preLoaderRoute: typeof ApiAuthCallbackRouteImport
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/backchannel-logout': {
@@ -329,11 +329,11 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  AuthCallbackRoute: AuthCallbackRoute,
+  CallbackRoute: CallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
   ApiAuthBackchannelLogoutRoute: ApiAuthBackchannelLogoutRoute,
-  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
   ApiPermissionsSlugRoute: ApiPermissionsSlugRoute,
@@ -344,10 +344,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

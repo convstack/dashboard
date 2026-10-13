@@ -1,5 +1,4 @@
 import type { PageSection } from "@convstack/service-sdk/types";
-import DOMPurify from "isomorphic-dompurify";
 import {
 	Bold,
 	Code,
@@ -19,6 +18,9 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { interpolateEndpoint } from "~/lib/manifest-routing";
 import { marked, preprocessMarkdown } from "~/lib/markdown";
+import { sanitizeMarkdownHtml } from "~/lib/markdown-sanitize";
+import { proxyPath } from "~/lib/proxy-path";
+import { safeRedirect } from "~/lib/safe-url";
 
 interface MarkdownEditorConfig {
 	contentField?: string;
@@ -246,7 +248,9 @@ export function MarkdownEditorSection({
 			return;
 		}
 		try {
-			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`);
+			const path = proxyPath(serviceSlug, endpoint);
+			if (!path) throw new Error("Invalid endpoint");
+			const response = await fetch(path);
 			if (response.ok) {
 				const data = await response.json();
 				if (data?.[titleField]) setTitle(data[titleField]);
@@ -332,8 +336,14 @@ export function MarkdownEditorSection({
 			body.editSummary = editSummary.trim();
 		}
 
+		const path = proxyPath(serviceSlug, endpoint);
+		if (!path) {
+			setError("Invalid endpoint");
+			setLoading(false);
+			return;
+		}
 		try {
-			const response = await fetch(`/api/proxy/${serviceSlug}${endpoint}`, {
+			const response = await fetch(path, {
 				method: (config.method as string) || "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(body),
@@ -344,8 +354,9 @@ export function MarkdownEditorSection({
 				setError(data?.error || `Error: ${response.status}`);
 			} else {
 				const data = await response.json().catch(() => null);
-				if (data?.redirect) {
-					window.location.href = data.redirect;
+				const redirectTo = safeRedirect(data?.redirect);
+				if (redirectTo) {
+					window.location.href = redirectTo;
 				} else {
 					setSuccess(true);
 					setTimeout(() => window.location.reload(), 500);
@@ -365,14 +376,11 @@ export function MarkdownEditorSection({
 		);
 	}
 
-	const previewHtml = DOMPurify.sanitize(
+	const previewHtml = sanitizeMarkdownHtml(
 		marked.parse(preprocessMarkdown(content || "*Nothing to preview*"), {
 			async: false,
 		}) as string,
-		{
-			ADD_TAGS: ["input"],
-			ADD_ATTR: ["checked", "disabled", "type"],
-		},
+		serviceSlug,
 	);
 
 	return (
